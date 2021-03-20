@@ -38,7 +38,7 @@ public class MixinTweakFarPlane {
 	@Shadow
 	private float viewDistance;
 
-	@Redirect(method = "getBasicProjectionMatrix(Lnet/minecraft/client/render/Camera;FZ)Lnet/minecraft/util/math/Matrix4f;", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;viewDistance:F"))
+	@Redirect(method = "getBasicProjectionMatrix(D)Lnet/minecraft/util/math/Matrix4f;", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;method_32796()F"))
 	private float iris$tweakViewDistanceToMatchOptiFine(GameRenderer renderer) {
 		float tweakedViewDistance = this.viewDistance;
 
@@ -49,7 +49,7 @@ public class MixinTweakFarPlane {
 		// Use a minimum distance for the far plane
 		// The real far plane will be 4 times this, so this will result in a far plane of 173 meters.
 		//
-		// Math.max returns the maximum of thw two values, so whenever tweakedViewDistance falls below 43.25F, this code
+		// Math.max returns the maximum of the two values, so whenever tweakedViewDistance falls below 43.25F, this code
 		// forces it to take on a value of 43.25F.
 		tweakedViewDistance = Math.max(43.25F, tweakedViewDistance);
 

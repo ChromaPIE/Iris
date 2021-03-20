@@ -3,6 +3,13 @@ plugins {
 	id 'maven-publish'
 }
 
+repositories {
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/'
+	}
+}
+
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
@@ -28,7 +35,7 @@ dependencies {
 	includeFabricApiModule "fabric-api-base"
 
 	// Config screen integration
-	modApi "io.github.prospector:modmenu:1.14.13+build.22"
+	modApi "com.terraformersmc:modmenu:2.0.0-beta.2"
 }
 
 def includeFabricApiModule(String moduleName) {

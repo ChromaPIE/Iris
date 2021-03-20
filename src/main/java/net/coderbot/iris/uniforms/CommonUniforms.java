@@ -1,35 +1,29 @@
 package net.coderbot.iris.uniforms;
 
-import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.ONCE;
-import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.PER_FRAME;
-import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.PER_TICK;
-
-import java.util.Objects;
-import java.util.function.IntSupplier;
-
 import net.coderbot.iris.gl.uniform.UniformHolder;
-import net.coderbot.iris.gl.uniform.UniformUpdateFrequency;
 import net.coderbot.iris.shaderpack.IdMap;
 import net.coderbot.iris.texunits.TextureUnit;
-
-import net.coderbot.iris.uniforms.transforms.SmoothedFloat;
 import net.coderbot.iris.uniforms.transforms.SmoothedVec2f;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.CameraSubmersionType;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tag.FluidTags;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LightType;
+
+import java.util.Objects;
+import java.util.function.IntSupplier;
+
+import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.*;
 
 public final class CommonUniforms {
 	private static final MinecraftClient client = MinecraftClient.getInstance();
@@ -64,7 +58,7 @@ public final class CommonUniforms {
 			.uniform1f(PER_FRAME, "screenBrightness", () -> client.options.gamma)
 			.uniform1f(PER_TICK, "playerMood", CommonUniforms::getPlayerMood)
 			.uniform2i(PER_FRAME, "eyeBrightness", CommonUniforms::getEyeBrightness)
-      // TODO: Parse the value of const float eyeBrightnessHalflife from the shaderpack's fragment shader configuration
+      		// TODO: Parse the value of const float eyeBrightnessHalflife from the shaderpack's fragment shader configuration
 			.uniform2i(PER_FRAME, "eyeBrightnessSmooth", new SmoothedVec2f(10.0f, CommonUniforms::getEyeBrightness))
 			.uniform3d(PER_FRAME, "skyColor", CommonUniforms::getSkyColor);
 	}
@@ -74,7 +68,7 @@ public final class CommonUniforms {
 			return Vec3d.ZERO;
 		}
 
-		return client.world.method_23777(client.cameraEntity.getBlockPos(), CapturedRenderingState.INSTANCE.getTickDelta());
+		return client.world.method_23777(client.cameraEntity.getPos(), CapturedRenderingState.INSTANCE.getTickDelta());
 	}
 
 	private static float getBlindness() {
@@ -143,11 +137,11 @@ public final class CommonUniforms {
 	}
 
 	private static int isEyeInWater() {
-		FluidState submergedFluid = client.gameRenderer.getCamera().getSubmergedFluidState();
+		CameraSubmersionType submergedFluid = client.gameRenderer.getCamera().getSubmersionType();
 
-		if (submergedFluid.isIn(FluidTags.WATER)) {
+		if (submergedFluid == CameraSubmersionType.WATER) {
 			return 1;
-		} else if (submergedFluid.isIn(FluidTags.LAVA)) {
+		} else if (submergedFluid == CameraSubmersionType.LAVA) {
 			return 2;
 		} else {
 			return 0;
