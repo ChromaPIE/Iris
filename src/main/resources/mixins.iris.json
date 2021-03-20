@@ -29,7 +29,7 @@
     "texunits.MixinOverlayTexture",
     "texunits.MixinVertexFormats",
     "MixinModelViewBobbing",
-    "MixinTweakFarPlane"
+//    "MixinTweakFarPlane"
   ],
   "injectors": {
     "defaultRequire": 1
