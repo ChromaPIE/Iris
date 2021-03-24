@@ -1,5 +1,6 @@
 package net.coderbot.iris.shaderpack;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -9,14 +10,15 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.coderbot.iris.Iris;
+import org.apache.commons.lang3.StringUtils;
+
 import net.minecraft.util.Util;
 
 public class DefineOptionParser {
 	/*
 	 Regex for matching boolean options
-	  Match if or if not the line starts with any number of backslashes that are more than 2 ("//")
-	  Match 0 or more whitespace after the "//"
+	  Match if or if not the line starts with anynumber of backslashes that are more than 2 ("//")
+	  Match 0 or more whitspace after the "//"
 	  Match the #define
 	  Match 1 whitespace after that
 	  Match any letter, number, or underscore name
@@ -96,7 +98,7 @@ public class DefineOptionParser {
 
 				String name = group(booleanMatcher, "name");
 				String startingComment = group(booleanMatcher, "startingComment");
-				String trailingComment = group(booleanMatcher,"commentContent");
+				String trailingComment = group(booleanMatcher, "commentContent");
 
 				if (name == null)
 					continue; //continue if the name is not apparent. Not sure how this is possible if the regex matches, but to be safe, let's ignore it
@@ -195,7 +197,7 @@ public class DefineOptionParser {
 	 * @return a new option
 	 */
 	private static Option<Boolean> createBooleanOption(String name, String comment, String startingComment, ShaderPackConfig config) {
-		boolean defaultValue = startingComment == null;// If the starting comment is not present, then it is default on, otherwise it is off
+		boolean defaultValue = startingComment == null; // If the starting comment is not present, then it is default on, otherwise it is off
 
 		Option<Boolean> booleanOption = new Option<>(comment, Arrays.asList(true, false), name, defaultValue, Boolean::parseBoolean);
 
@@ -225,7 +227,15 @@ public class DefineOptionParser {
 		if (comment != null && comment.contains("[") && comment.contains("]")) {
 			String array = comment.substring(comment.indexOf("["), comment.indexOf("]") + 1);
 			comment = comment.replace(array, "");
-			floats = parseArray(array, Float::parseFloat);
+
+			floats = parseArray(array, (val) -> {
+				int secondDotIndex = StringUtils.ordinalIndexOf(val,"." , 2);
+				if (secondDotIndex != -1) {
+					val = val.substring(0, secondDotIndex);
+				}
+
+				return Float.parseFloat(val);
+			});
 		}
 
 		Option<Float> floatOption = new Option<>(comment, floats, name, floatValue, Float::parseFloat);
@@ -259,7 +269,14 @@ public class DefineOptionParser {
 		if (comment != null && comment.contains("[") && comment.contains("]")) {
 			String array = comment.substring(comment.indexOf("["), comment.indexOf("]") + 1);
 			comment = comment.replace(array, "");
-			integers = parseArray(array, Integer::parseInt);
+			integers = parseArray(array, (val) -> {
+				int secondDotIndex = StringUtils.ordinalIndexOf(val,"." , 2);
+				if (secondDotIndex != -1) {
+					val = val.substring(0, secondDotIndex);
+				}
+
+				return (int) Float.parseFloat(val);
+			});
 		}
 
 		Option<Integer> integerOption = new Option<>(comment, integers, name, intValue, (string) -> (int) Float.parseFloat(string));//parse as float and cast to string to be flexible
@@ -301,9 +318,11 @@ public class DefineOptionParser {
 			return list;
 		}
 		// Replace the "[" and "]" of the array
-		array = array.replace("[", "").replace("]", "");
+		array = array.replace("[", "").replace("]", "").trim();
 
-		for (String val : array.split("\\s+")) {
+		String[] splitArray = array.split("\\s+");
+
+		for (String val : splitArray) {
 			list.add(parser.apply(val));
 		}
 

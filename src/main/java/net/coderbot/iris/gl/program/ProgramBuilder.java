@@ -6,10 +6,21 @@ import net.coderbot.iris.gl.shader.ProgramCreator;
 import net.coderbot.iris.gl.shader.ShaderConstants;
 import net.coderbot.iris.gl.shader.ShaderType;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL21C;
 
+import static net.coderbot.iris.gl.shader.StandardMacros.*;
+
 public class ProgramBuilder extends ProgramUniforms.Builder {
-	private static final ShaderConstants EMPTY_CONSTANTS = ShaderConstants.builder().build();
+	private static final ShaderConstants MACRO_CONSTANTS = ShaderConstants.builder()
+		.define(getOsString())
+		.define("MC_VERSION", getMcVersion())
+		.define("MC_GL_VERSION", getGlVersion(GL20C.GL_VERSION))
+		.define("MC_GLSL_VERSION", getGlVersion(GL20C.GL_SHADING_LANGUAGE_VERSION))
+		.define(getRenderer())
+		.define(getVendor())
+		.defineAll(getGlExtensions())
+		.build();
 
 	private final int program;
 
@@ -23,27 +34,35 @@ public class ProgramBuilder extends ProgramUniforms.Builder {
 		GL21C.glBindAttribLocation(program, index, name);
 	}
 
-	public static ProgramBuilder begin(String name, @Nullable String vertexSource, @Nullable String fragmentSource) {
+	public static ProgramBuilder begin(String name, @Nullable String vertexSource, @Nullable String geometrySource, @Nullable String fragmentSource) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
 
 		GlShader vertex;
+		GlShader geometry;
 		GlShader fragment;
 
 		try {
-			vertex = new GlShader(ShaderType.VERTEX, name + ".vsh", vertexSource, EMPTY_CONSTANTS);
+			vertex = new GlShader(ShaderType.VERTEX, name + ".vsh", vertexSource, MACRO_CONSTANTS);
 		} catch (RuntimeException e) {
 			throw new RuntimeException("Failed to compile vertex shader for program " + name, e);
 		}
+	if (geometrySource != null)
+		try {
+			geometry = new GlShader(ShaderType.GEOMETRY, name + ".gsh", geometrySource, MACRO_CONSTANTS);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Failed to compile geometry shader for program " + name, e);
+		} else geometry = null;
 
 		try {
-			fragment = new GlShader(ShaderType.FRAGMENT, name + ".fsh", fragmentSource, EMPTY_CONSTANTS);
+			fragment = new GlShader(ShaderType.FRAGMENT, name + ".fsh", fragmentSource, MACRO_CONSTANTS);
 		} catch (RuntimeException e) {
 			throw new RuntimeException("Failed to compile fragment shader for program " + name, e);
 		}
 
-		int programId = ProgramCreator.create(name, vertex, fragment);
+		int programId = ProgramCreator.create(name, vertex, geometry, fragment);
 
 		vertex.destroy();
+		if (geometry != null) geometry.destroy();
 		fragment.destroy();
 
 		return new ProgramBuilder(name, programId);

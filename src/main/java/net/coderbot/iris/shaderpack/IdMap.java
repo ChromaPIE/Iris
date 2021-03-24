@@ -1,14 +1,12 @@
 package net.coderbot.iris.shaderpack;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 
-import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -19,6 +17,9 @@ import org.apache.logging.log4j.Level;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
+
+import static java.lang.Integer.parseInt;
+import static net.coderbot.iris.shaderpack.PropertiesPreprocessor.parseProperties;
 
 /**
  * A utility class for parsing entries in item.properties, block.properties, and entities.properties files in shaderpacks
@@ -37,12 +38,12 @@ public class IdMap {
 	/**
 	 * A map that contains the identifier of an item to the integer value parsed in block.properties
 	 */
-	private Map<Identifier, Integer> blockPropertiesMap = Maps.newHashMap();
+	private Map<Identifier, Integer> blockPropertiesMap = new HashMap<>();
 
 	/**
 	 * A map that contains render layers for blocks in block.properties
 	 */
-	private Map<Identifier, RenderLayer> blockRenderLayerMap = Maps.newHashMap();
+	private Map<Identifier, RenderLayer> blockRenderLayerMap = new HashMap<>();
 
 	public IdMap(Path shaderPath) {
 		itemIdMap = loadProperties(shaderPath, "item.properties")
@@ -62,38 +63,43 @@ public class IdMap {
 
 	/**
 	 * Loads properties from a properties file in a shaderpack path
-	 * TODO: Preprocess conditional preprocessor directives (#ifdef, #if, etc.) and Standard Macros A to G from Optifine
-	 * See https://github.com/sp614x/optifine/blob/master/OptiFineDoc/doc/shaders.txt#L670
-	 * Permalink: https://github.com/sp614x/optifine/blob/28172bc21b306334e06916d3e3907f251c51e0dc/OptiFineDoc/doc/shaders.txt#L670
-	 * This Java macro preprocessor might help: http://jsesoft.sourceforge.net/
 	 */
 	private static Optional<Properties> loadProperties(Path shaderPath, String name) {
-		// TODO: Tempfix so pre-1.13 block id mappings in the currently unrecognized #else condition in
-		//  Sildur's Shaders block.properties are ignored, so they don't override the valid post-1.13
-		//  block id mappings in the #if MC_VERSION >= 11300 condition. Remove when conditionals
-		//  and standard macro preprocessing is implemented.
-
-		// Ignore duplicate properties after the original property is defined
-		Properties properties = new Properties() {
-			@Override
-			public synchronized Object put(Object key, Object value) {
-				if (get(key) != null) return get(key); // If the key already has a value, don't change it
-
-				return super.put(key, value);
-			}
-		};
-
 		if (shaderPath == null) return Optional.empty();
 
+		String fileContents = readProperties(shaderPath, name);
+		if (fileContents == null) return Optional.empty();
+
+		List<String> lines = parseProperties(name, fileContents);
+
+		StringBuilder processed = new StringBuilder();
+		for (String line : lines) {
+			processed.append(line);
+			processed.append('\n');
+		}
+
+		StringReader propertiesReader = new StringReader(processed.toString());
+		Properties properties = new Properties();
 		try {
-			properties.load(Files.newInputStream(shaderPath.resolve(name)));
+			properties.load(propertiesReader);
 		} catch (IOException e) {
-			Iris.logger.debug("An " + name + " file was not found in the current shaderpack");
+			Iris.logger.error("Error loading " + name + " at " + shaderPath);
+			Iris.logger.catching(Level.ERROR, e);
 
 			return Optional.empty();
 		}
 
 		return Optional.of(properties);
+	}
+
+	private static String readProperties(Path shaderPath, String name) {
+		try {
+			return new String(Files.readAllBytes(shaderPath.resolve(name)), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			Iris.logger.debug("An " + name + " file was not found in the current shaderpack");
+
+			return null;
+		}
 	}
 
 	private static Object2IntMap<Identifier> parseItemIdMap(Properties properties) {
@@ -122,7 +128,7 @@ public class IdMap {
 			int intId;
 
 			try {
-				intId = Integer.parseInt(key.substring(keyPrefix.length()));
+				intId = parseInt(key.substring(keyPrefix.length()));
 			} catch (NumberFormatException e) {
 				// Not a valid property line
 				Iris.logger.warn("Failed to parse line in " + fileName + ": invalid key " + key);

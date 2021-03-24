@@ -33,16 +33,7 @@ public class ShaderPack {
 	private final ShaderPackConfig config;
 	private final ShaderProperties shaderProperties;
 
-	private static final Map<RegistryKey<World>, Integer> RAW_ID_DIMS = Util.make(() -> {
-		Map<RegistryKey<World>, Integer> worldToIdMap  = new HashMap<>();
-		worldToIdMap.put(World.NETHER, -1);
-		worldToIdMap.put(World.OVERWORLD, 0);
-		worldToIdMap.put(World.END, 1);
-		return worldToIdMap;
-	});
-
-
-	public ShaderPack(@Nullable Path root) throws IOException {
+	public ShaderPack(Path root) throws IOException {
 		this.shaderProperties = loadProperties(root, "shaders.properties")
 			.map(ShaderProperties::new)
 			.orElseGet(ShaderProperties::empty);

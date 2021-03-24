@@ -20,6 +20,9 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
+
+import static net.coderbot.iris.Iris.SHADERPACK_DIR;
 
 public class ShaderPackScreen extends Screen implements TransparentBackgroundScreen {
     private ShaderPackListWidget shaderPacks;
@@ -38,7 +41,9 @@ public class ShaderPackScreen extends Screen implements TransparentBackgroundScr
 
     public ShaderPackScreen(Screen parent) {
         super(new TranslatableText("options.iris.shaderPackSelection.title"));
-        ScreenStack.push(parent);
+        if (parent != null) {
+			ScreenStack.push(parent);
+		}
     }
 
     @Override
@@ -57,7 +62,7 @@ public class ShaderPackScreen extends Screen implements TransparentBackgroundScr
         this.doneButton = this.addButton(new ButtonWidget(bottomCenter + 104, this.height - 27, 100, 20, ScreenTexts.DONE, button -> { applyChanges(); onClose(); }));
         this.applyButton = this.addButton(new ButtonWidget(bottomCenter, this.height - 27, 100, 20, new TranslatableText("options.iris.apply"), button -> this.applyChanges()));
         this.cancelButton = this.addButton(new ButtonWidget(bottomCenter - 104, this.height - 27, 100, 20, ScreenTexts.CANCEL, button -> this.onClose()));
-        this.openFolderButton = this.addButton(new ButtonWidget(topCenter - 78, this.height - 51, 152, 20, new TranslatableText("options.iris.openShaderPackFolder"), button -> Util.getOperatingSystem().open(Iris.getShaderPackDir().toFile())));
+        this.openFolderButton = this.addButton(new ButtonWidget(topCenter - 78, this.height - 51, 152, 20, new TranslatableText("options.iris.openShaderPackFolder"), button -> Util.getOperatingSystem().open(SHADERPACK_DIR.toFile())));
         this.refreshButton = this.addButton(new ButtonWidget(topCenter + 78, this.height - 51, 152, 20, new TranslatableText("options.iris.refreshShaderPacks"), button -> this.shaderPacks.refresh()));
         this.irisConfigButton = this.addButton(new IrisConfigScreenButtonWidget(this.width - 26, 6, button -> client.openScreen(new IrisConfigScreen(this))));
 
@@ -100,7 +105,11 @@ public class ShaderPackScreen extends Screen implements TransparentBackgroundScr
     @Override
     public void onClose() {
 		ScreenStack.pull(this.getClass());
-		client.openScreen(ScreenStack.pop());
+		try {
+			client.openScreen(ScreenStack.pop());
+		} catch (NoSuchElementException e) {
+			client.openScreen(null);
+		}
     }
 
     private void applyChanges() {

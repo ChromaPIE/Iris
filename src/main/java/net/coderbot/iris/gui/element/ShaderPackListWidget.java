@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static net.coderbot.iris.Iris.SHADERPACK_DIR;
+
 public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPackListWidget.ShaderPackEntry> {
     public ShaderPackListWidget(MinecraftClient minecraftClient, int width, int height, int top, int bottom, int left, int right) {
         super(minecraftClient, width, height, top, bottom, left, right, 20);
@@ -37,12 +39,11 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
     public void refresh() {
         this.clearEntries();
         try {
-            Path path = Iris.getShaderPackDir();
-            int index = 0;
+			int index = 0;
 			addEntry(index, "(off)");
 			index++;
             addEntry(index, "(internal)");
-            for (Path folder : Files.walk(path, 1).filter(p -> {
+            for (Path folder : Files.walk(SHADERPACK_DIR, 1).filter(p -> {
                 if (Files.isDirectory(p)) {
                     return Files.exists(p.resolve("shaders"));
                 } else if (p.toString().endsWith(".zip")) {
