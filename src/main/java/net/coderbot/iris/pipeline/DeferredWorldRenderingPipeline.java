@@ -9,6 +9,7 @@ import net.coderbot.iris.gl.program.Program;
 import net.coderbot.iris.gl.program.ProgramBuilder;
 import net.coderbot.iris.layer.GbufferProgram;
 import net.coderbot.iris.postprocess.CompositeRenderer;
+import net.coderbot.iris.postprocess.DeferredRenderer;
 import net.coderbot.iris.rendertarget.NativeImageBackedNoiseTexture;
 import net.coderbot.iris.rendertarget.NativeImageBackedSingleColorTexture;
 import net.coderbot.iris.rendertarget.RenderTarget;
@@ -85,6 +86,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 	private final EmptyShadowMapRenderer shadowMapRenderer;
 	private final CompositeRenderer compositeRenderer;
+	private final DeferredRenderer deferredRenderer;
 	private final NativeImageBackedSingleColorTexture normals;
 	private final NativeImageBackedSingleColorTexture specular;
 	private final AbstractTexture noise;
@@ -171,6 +173,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 		this.shadowMapRenderer = new EmptyShadowMapRenderer(2048);
 		this.compositeRenderer = new CompositeRenderer(programs, renderTargets, shadowMapRenderer, noise);
+		this.deferredRenderer = new DeferredRenderer(programs, renderTargets, shadowMapRenderer, noise);
 
 		// first optimization pass
 		this.customUniforms.optimise();
@@ -501,6 +504,11 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		// This destroys all of the loaded composite programs as well.
 		compositeRenderer.destroy();
 
+		// Destroy the deferred rendering pipeline
+		//
+		// This destroys all of the loaded deferred programs as well.
+		deferredRenderer.destroy();
+
 		// Destroy our render targets
 		//
 		// While it's possible to just clear them instead and reuse them, we'd need to investigate whether or not this
@@ -574,6 +582,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 	@Override
 	public void beginTranslucents() {
+		deferredRenderer.renderAll();
 		// We need to copy the current depth texture so that depthtex1 and depthtex2 can contain the depth values for
 		// all non-translucent content, as required.
 		baseline.bind();
