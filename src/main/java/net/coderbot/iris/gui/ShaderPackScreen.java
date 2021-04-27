@@ -1,5 +1,6 @@
 package net.coderbot.iris.gui;
 
+import com.google.common.base.Throwables;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.element.ShaderPackListWidget;
@@ -126,9 +127,16 @@ public class ShaderPackScreen extends Screen implements TransparentBackgroundScr
         this.shaderProperties.saveProperties();
 		try {
 			Iris.reload();
-		} catch (IOException e) {
-			Iris.logger.error("An error occurred attempting to apply a new Shaderpack from the Shaderpack Selection Screen");
-			e.printStackTrace();
+		} catch (Exception e) {
+			Iris.logger.error("Error while switching Shaders for Iris!", e);
+
+			if (this.client.player != null) {
+				this.client.player.sendMessage(new TranslatableText("iris.shaders.reloaded.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
+			}
+
+			Iris.getIrisConfig().setShadersDisabled();
+			// Set the selected shaderpack to off in the gui
+			this.shaderPacks.select(0);
 		}
         this.reloadShaderConfig();
     }

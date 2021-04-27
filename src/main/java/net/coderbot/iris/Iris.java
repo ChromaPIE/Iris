@@ -68,8 +68,8 @@ public class Iris implements ClientModInitializer {
 		try {
 			Files.createDirectories(SHADERPACK_DIR);
 		} catch (IOException e) {
-			Iris.logger.warn("Failed to create the shaderpacks directory!");
-			Iris.logger.catching(Level.WARN, e);
+			logger.warn("Failed to create the shaderpacks directory!");
+			logger.catching(Level.WARN, e);
 		}
 
 		irisConfig = new IrisConfig();
@@ -134,6 +134,8 @@ public class Iris implements ClientModInitializer {
 						if (minecraftClient.player != null) {
 							minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
 						}
+
+						Iris.setShadersDisabled();
 					}
 				} else {
 					if (minecraftClient.player != null) {

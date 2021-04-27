@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.coderbot.iris.Iris;
 import org.apache.commons.lang3.StringUtils;
 
 import net.minecraft.util.Util;
@@ -176,7 +177,7 @@ public class DefineOptionParser {
 
 	private static String applyBooleanOption(Option<Boolean> option, String line, String startingComment) {
 		if (option.getValue() && startingComment != null) {
-			return line.replace(startingComment, "");
+			return line.substring(startingComment.length());
 
 			// If the option is false but there is no comment at the beginning
 			// This indicates that the option in the config is false, but the line is true

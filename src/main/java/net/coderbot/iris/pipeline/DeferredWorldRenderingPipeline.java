@@ -1,5 +1,8 @@
 package net.coderbot.iris.pipeline;
 
+import java.io.IOException;
+import java.util.*;
+
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.coderbot.iris.Iris;
@@ -10,6 +13,7 @@ import net.coderbot.iris.gl.program.ProgramBuilder;
 import net.coderbot.iris.layer.GbufferProgram;
 import net.coderbot.iris.postprocess.CompositeRenderer;
 import net.coderbot.iris.postprocess.DeferredRenderer;
+import net.coderbot.iris.rendertarget.NativeImageBackedCustomTexture;
 import net.coderbot.iris.rendertarget.NativeImageBackedNoiseTexture;
 import net.coderbot.iris.rendertarget.NativeImageBackedSingleColorTexture;
 import net.coderbot.iris.rendertarget.RenderTarget;
@@ -152,22 +156,20 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		normals = new NativeImageBackedSingleColorTexture(127, 127, 255, 255);
 		specular = new NativeImageBackedSingleColorTexture(0, 0, 0, 0);
 
-		final int noiseTextureResolution = programs.getPackDirectives().getNoiseTextureResolution();
-		AbstractTexture noiseTexture;
-		if (programs.getPack().getCustomNoiseTexturePath() != null) {
-			Path customNoiseTexturePath = programs.getPack().getCustomNoiseTexturePath();
+		noise = programs.getPack().getCustomNoiseTexture().flatMap(texture -> {
 			try {
-				noiseTexture = new CustomNoiseTexture(Files.newInputStream(customNoiseTexturePath));
+				AbstractTexture customNoiseTexture = new NativeImageBackedCustomTexture(texture);
+
+				return Optional.of(customNoiseTexture);
 			} catch (IOException e) {
-				Iris.logger.error("An IOException occurred reading " + customNoiseTexturePath.getFileName() + " from the current shaderpack");
-				Iris.logger.catching(Level.ERROR, e);
-				Iris.logger.info("Falling back to random noise texture...");
-				noiseTexture = new NativeImageBackedNoiseTexture(noiseTextureResolution);
+				Iris.logger.error("Unable to parse the image data for the custom noise texture", e);
+				return Optional.empty();
 			}
-		} else {
-			noiseTexture = new NativeImageBackedNoiseTexture(noiseTextureResolution);
-		}
-		this.noise = noiseTexture;
+		}).orElseGet(() -> {
+			final int noiseTextureResolution = programs.getPackDirectives().getNoiseTextureResolution();
+
+			return new NativeImageBackedNoiseTexture(noiseTextureResolution);
+		});
 
 		GlStateManager.activeTexture(GL20C.GL_TEXTURE0);
 
