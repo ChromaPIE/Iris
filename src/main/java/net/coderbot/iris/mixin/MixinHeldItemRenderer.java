@@ -1,6 +1,6 @@
 package net.coderbot.iris.mixin;
 
-import net.coderbot.iris.gui.TransparentBackgroundScreen;
+import net.coderbot.iris.gui.screen.HudHideable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -20,7 +20,7 @@ public class MixinHeldItemRenderer {
     @Shadow @Final private MinecraftClient client;
 
     @Inject(method = "renderFirstPersonItem", at = @At("HEAD"), cancellable = true)
-    public void handleTransparentGui(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand, float swingProgress, ItemStack item, float equipProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        if(this.client.currentScreen instanceof TransparentBackgroundScreen && !((TransparentBackgroundScreen)this.client.currentScreen).renderHud()) ci.cancel();
+    public void iris$handleHudHidingScreens(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand, float swingProgress, ItemStack item, float equipProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
+        if (this.client.currentScreen instanceof HudHideable) ci.cancel();
     }
 }

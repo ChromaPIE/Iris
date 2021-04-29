@@ -108,7 +108,7 @@ public final class GuiUtil {
     public static Text trimmed(TextRenderer tr, String text, int lenPixels, boolean translated, boolean ellipsis, Formatting... formats) {
         String tx = translated ? I18n.translate(text) : text;
         LiteralText t = (LiteralText) new LiteralText(tx).formatted(formats);
-        if(tr.getWidth(t) > lenPixels) {
+        if (tr.getWidth(t) > lenPixels) {
             return new LiteralText(tr.trimToWidth(tx, lenPixels - (ellipsis ? 8 : 0)) + (ellipsis ? "..." : "")).formatted(formats);
         }
         return t;
@@ -116,18 +116,18 @@ public final class GuiUtil {
 
     public static void drawButton(int x, int y, int width, int height, boolean selected, boolean isLink) {
         UiTheme theme = Iris.getIrisConfig().getUITheme();
-        if(theme == UiTheme.AQUA) {
+        if (theme == UiTheme.AQUA) {
             y += 1;
             height -= 2;
         }
-        if(theme == UiTheme.VANILLA) {
+        if (theme == UiTheme.VANILLA) {
             MinecraftClient.getInstance().getTextureManager().bindTexture(AbstractButtonWidget.WIDGETS_LOCATION);
             int v = 46 + (selected ? 40 : 20);
             int yp = y + (int)Math.ceil((float)Math.max(0, height - 20) / 2);
             texture(x, yp, -100, width / 2, 20, 0, v);
             texture(x + width / 2, yp, -100, width / 2, 20, 200 - (width / 2), v);
         } else {
-            if(selected) {
+            if (selected) {
                 fill(x, y, width, height, theme == UiTheme.IRIS ? 0x8AE0E0E0 : 0xE0000000);
                 if(theme == UiTheme.AQUA && isLink) GuiUtil.fill(x, y + height, width, 1, 0xFF94E4D3);
             } else if(theme == UiTheme.IRIS) {
@@ -140,7 +140,7 @@ public final class GuiUtil {
 
     public static void drawSlider(int x, int y, int width, int height, boolean selected, float progress) {
         UiTheme theme = Iris.getIrisConfig().getUITheme();
-        if(theme == UiTheme.IRIS) {
+        if (theme == UiTheme.IRIS) {
             int color = 0x8AE0E0E0;
 
             GuiUtil.borderedRect(x, y + 2, -100, width, height - 4, color);
@@ -153,8 +153,7 @@ public final class GuiUtil {
             } else {
                 GuiUtil.borderedRect(sx, y + 4, -100, 6, height - 8, color);
             }
-        } else if(theme == UiTheme.AQUA) {
-
+        } else if (theme == UiTheme.AQUA) {
             fill(x, y, width, height, selected ? 0xE0000000 : 0x90000000);
 
             GuiUtil.fill(x + 2, (int)(y + (height * 0.75)), width - 4, 1, 0xFFFFFFFF);

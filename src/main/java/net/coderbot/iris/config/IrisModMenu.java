@@ -1,8 +1,8 @@
 package net.coderbot.iris.config;
 
-import io.github.prospector.modmenu.api.ConfigScreenFactory;
-import io.github.prospector.modmenu.api.ModMenuApi;
-import net.coderbot.iris.gui.IrisConfigScreen;
+import com.terraformersmc.modmenu.api.ConfigScreenFactory;
+import com.terraformersmc.modmenu.api.ModMenuApi;
+import net.coderbot.iris.gui.screen.IrisConfigScreen;
 
 public class IrisModMenu implements ModMenuApi {
     @Override

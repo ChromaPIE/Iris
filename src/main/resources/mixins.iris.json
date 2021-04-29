@@ -13,12 +13,13 @@
     "MixinImmediateVertexConsumerProvider",
     "MixinInGameHud",
     "MixinEntityRenderDispatcher",
+    "MixinModelViewBobbing",
     "MixinParticleManager",
     "MixinTranslationStorage",
+    "MixinTweakFarPlane",
     "MixinWorldRenderer",
     "fabulous.MixinDisableFabulousGraphics",
     "fabulous.MixinOption",
-    "gui.AccessorScreen",
     "gui.MixinVideoOptionsScreen",
     "renderlayer.MixinFixEyesTranslucency",
     "renderlayer.MixinRenderLayer",
@@ -28,9 +29,7 @@
     "texunits.MixinGlStateManager",
     "texunits.MixinLightmapTextureManager",
     "texunits.MixinOverlayTexture",
-    "texunits.MixinVertexFormats",
-    "MixinModelViewBobbing",
-    "MixinTweakFarPlane"
+    "texunits.MixinVertexFormats"
   ],
   "injectors": {
     "defaultRequire": 1

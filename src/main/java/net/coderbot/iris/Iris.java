@@ -7,7 +7,7 @@ import java.util.zip.ZipException;
 
 import com.google.common.base.Throwables;
 import net.coderbot.iris.config.IrisConfig;
-import net.coderbot.iris.gui.ShaderPackScreen;
+import net.coderbot.iris.gui.screen.ShaderPackScreen;
 import net.coderbot.iris.pipeline.*;
 import net.coderbot.iris.shaderpack.DimensionId;
 import net.coderbot.iris.shaderpack.ProgramSet;
@@ -143,7 +143,7 @@ public class Iris implements ClientModInitializer {
 					}
 				}
 			} else if (shaderpackScreenKeybind.wasPressed()) {
-				minecraftClient.openScreen(new ShaderPackScreen(minecraftClient.currentScreen));
+				minecraftClient.openScreen(new ShaderPackScreen(null));
 			}
 		});
 
@@ -292,6 +292,27 @@ public class Iris implements ClientModInitializer {
 		getIrisConfig().setShadersDisabled();
 
 		logger.info("Shaders are disabled");
+	}
+
+	public static boolean isValidShaderpack(Path pack) {
+		if (Files.isDirectory(pack)) {
+			try {
+				return Files.walk(pack)
+						.filter(Files::isDirectory)
+						.anyMatch(path -> path.endsWith("shaders"));
+			} catch (IOException ignored) {
+			}
+		}
+		if (pack.toString().endsWith(".zip")) {
+			try {
+				FileSystem zipSystem = FileSystems.newFileSystem(pack, Iris.class.getClassLoader());
+				Path root = zipSystem.getRootDirectories().iterator().next();
+				return Files.walk(root)
+						.filter(Files::isDirectory)
+						.anyMatch(path -> path.endsWith("shaders"));
+			} catch (IOException ignored) {}
+		}
+		return false;
 	}
 
 	public static void reload() throws IOException {

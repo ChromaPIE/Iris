@@ -2,16 +2,12 @@ package net.coderbot.iris.gui.element;
 
 import net.coderbot.iris.gui.GuiUtil;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.TickableElement;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.util.math.MatrixStack;
 
-import java.util.Optional;
 
 public abstract class ShaderScreenEntryListWidget<E extends AlwaysSelectedEntryListWidget.Entry<E>> extends AlwaysSelectedEntryListWidget<E> implements TickableElement {
-    protected E selected;
-
     protected int scrollbarFade = 0;
     protected boolean hovered = false;
 
@@ -28,14 +24,14 @@ public abstract class ShaderScreenEntryListWidget<E extends AlwaysSelectedEntryL
 
     @Override
     public void tick() {
-        if(hovered) {
-            if(scrollbarFade < 3) scrollbarFade++;
-        } else if(scrollbarFade > 0) scrollbarFade--;
+        if (hovered) {
+            if (scrollbarFade < 3) scrollbarFade++;
+        } else if (scrollbarFade > 0) scrollbarFade--;
     }
 
     @Override
     protected final int getScrollbarPositionX() {
-        return 32767;
+        return 32767; // Make the vanilla scrollbar not visible
     }
 
     protected int getScrollbarXOffset() {
@@ -50,12 +46,8 @@ public abstract class ShaderScreenEntryListWidget<E extends AlwaysSelectedEntryL
         return 2;
     }
 
-    public E getSelected() {
-        return selected;
-    }
-
     public void select(int entry) {
-        this.selected = this.getEntry(entry);
+		setSelected(this.getEntry(entry));
     }
 
     @Override

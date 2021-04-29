@@ -1,9 +1,10 @@
-package net.coderbot.iris.gui;
+package net.coderbot.iris.gui.screen;
 
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.config.IrisConfig;
+import net.coderbot.iris.gui.GuiUtil;
+import net.coderbot.iris.gui.ScreenStack;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -11,24 +12,15 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 
-import java.util.NoSuchElementException;
-
-public class IrisConfigScreen extends Screen implements TransparentBackgroundScreen {
+public class IrisConfigScreen extends Screen implements HudHideable {
     protected final IrisConfig config = Iris.getIrisConfig();
     protected PropertyDocumentWidget configProperties;
 
-    protected final Screen parent;
+    private final Screen parent;
 
-    private ButtonWidget doneButton;
-    private ButtonWidget refreshButton;
-    private ButtonWidget applyButton;
-
-    private boolean initialized = false;
-
-    public IrisConfigScreen(Screen parent) {
+	public IrisConfigScreen(Screen parent) {
         super(new LiteralText(""));
         this.parent = parent;
-		ScreenStack.push(parent);
     }
 
     @Override
@@ -54,11 +46,15 @@ public class IrisConfigScreen extends Screen implements TransparentBackgroundScr
 
         this.children.add(configProperties);
 
-        this.doneButton = this.addButton(new ButtonWidget(bottomCenter + 104, this.height - 27, 100, 20, ScreenTexts.DONE, button -> { this.saveConfig(); onClose(); }));
-        this.applyButton = this.addButton(new ButtonWidget(bottomCenter, this.height - 27, 100, 20, new TranslatableText("options.iris.apply"), button -> this.saveConfig()));
-        this.refreshButton = this.addButton(new ButtonWidget(bottomCenter - 104, this.height - 27, 100, 20, new TranslatableText("options.iris.refresh"), button -> this.loadConfig()));
+        this.addButton(new ButtonWidget(bottomCenter + 104, this.height - 27, 100, 20, ScreenTexts.DONE, button -> { this.saveConfig(); onClose(); }));
+        this.addButton(new ButtonWidget(bottomCenter, this.height - 27, 100, 20, new TranslatableText("options.iris.apply"), button -> this.saveConfig()));
+        this.addButton(new ButtonWidget(bottomCenter - 104, this.height - 27, 100, 20, new TranslatableText("options.iris.refresh"), button -> this.loadConfig()));
 
         loadConfig();
+
+		if (parent != null) {
+			ScreenStack.push(parent);
+		}
     }
 
     @Override
@@ -74,14 +70,9 @@ public class IrisConfigScreen extends Screen implements TransparentBackgroundScr
 
     @Override
     public void onClose() {
-    	ScreenStack.pull(this.getClass());
-		try {
-			client.openScreen(ScreenStack.pop());
-		} catch (NoSuchElementException e) {
-			client.openScreen(null);
-		}
+		ScreenStack.pull(this.getClass());
+		client.openScreen(ScreenStack.pop());
 	}
-
 
     private void loadConfig() {
         this.configProperties.loadProperties();
@@ -89,10 +80,5 @@ public class IrisConfigScreen extends Screen implements TransparentBackgroundScr
 
     private void saveConfig() {
         this.configProperties.saveProperties();
-    }
-
-    @Override
-    public boolean renderHud() {
-        return false;
     }
 }
