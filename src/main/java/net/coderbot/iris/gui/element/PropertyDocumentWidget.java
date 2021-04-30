@@ -9,6 +9,7 @@ import net.coderbot.iris.shaderpack.ShaderPackConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -137,24 +138,27 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
                     } else if (p.equals("<empty>")) {
                         if (!Iris.getIrisConfig().getIfCondensedShaderConfig()) page.add(Property.EMPTY);
                     } else if (p.startsWith("[") && p.endsWith("]")) {
-                        String a = "screen." + String.copyValueOf(Arrays.copyOfRange(p.toCharArray(), 1, p.length() - 1));
-                        page.add(new LinkProperty(widget, a, GuiUtil.trimmed(tr, a, bw, true, true), LinkProperty.Align.LEFT));
-                        child2Parent.put(a, s);
+                        String rawScreenProperty = String.copyValueOf(Arrays.copyOfRange(p.toCharArray(), 1, p.length() - 1));
+                        String screenProperty = "screen." + rawScreenProperty;
+						boolean hasTranslation = I18n.hasTranslation(screenProperty);
+                        page.add(new LinkProperty(widget, screenProperty, GuiUtil.trimmed(tr, hasTranslation ? screenProperty : rawScreenProperty, bw, hasTranslation, true), LinkProperty.Align.LEFT));
+                        child2Parent.put(screenProperty, s);
                     } else {
                         //page.add(new StringOptionProperty(ImmutableList.of("This", "Is", "Not", "Functional"), 0, widget, p, GuiUtil.trimmed(tr, "option."+p, tw, true, true), sliderOptions.contains(p), false));
 						Option<Integer> intOption = config.getIntegerOption(p);
 						Option<Float> floatOption = config.getFloatOption(p);
 						Option<Boolean> boolOption = config.getBooleanOption(p);
+						boolean hasTranslation = I18n.hasTranslation("option." + p);
 						if (intOption != null) {
 							List<Integer> vals = intOption.getAllowedValues();
-							page.add(new IntOptionProperty(vals, vals.indexOf(intOption.getDefaultValue()), widget, p, GuiUtil.trimmed(tr, "option." + p, tw, true, true), sliderOptions.contains(p)));
+							page.add(new IntOptionProperty(vals, vals.indexOf(intOption.getDefaultValue()), widget, p, GuiUtil.trimmed(tr, (hasTranslation ? "option." : "") + p, tw, hasTranslation, true), sliderOptions.contains(p)));
 						} else if (floatOption != null) {
 							List<Float> vals = floatOption.getAllowedValues();
-							page.add(new FloatOptionProperty(vals, vals.indexOf(floatOption.getDefaultValue()), widget, p, GuiUtil.trimmed(tr, "option." + p, tw, true, true), sliderOptions.contains(p)));
+							page.add(new FloatOptionProperty(vals, vals.indexOf(floatOption.getDefaultValue()), widget, p, GuiUtil.trimmed(tr, (hasTranslation ? "option." : "") + p, tw, hasTranslation, true), sliderOptions.contains(p)));
 						} else if (boolOption != null) {
-							page.add(new BooleanOptionProperty(widget, boolOption.getDefaultValue(), p, GuiUtil.trimmed(tr, "option." + p, tw, true, true), sliderOptions.contains(p)));
+							page.add(new BooleanOptionProperty(widget, boolOption.getDefaultValue(), p, GuiUtil.trimmed(tr, (hasTranslation ? "option." : "") + p, tw, hasTranslation, true), sliderOptions.contains(p)));
 						} else {
-							page.add(new Property(GuiUtil.trimmed(tr, "option." + p, tw, true, true)));
+							page.add(new Property(GuiUtil.trimmed(tr, (hasTranslation ? "option." : "") + p, tw, hasTranslation, true)));
 						}
                     }
                 }
