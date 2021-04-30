@@ -57,11 +57,12 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		GuiUtil.drawDirtTexture(client, 0, 0, -100, width, 32);
 		GuiUtil.drawDirtTexture(client, 0, this.height - 58, -100, width, 58);
 		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 8, 16777215);
-		drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.select.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int)(this.width * 0.25), 21, 16777215);
-		drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.configure.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int)(this.width * 0.75), 21, 16777215);
 
 		if (addedPackDialog != null && addedPackDialogTimer > 0) {
 			drawCenteredText(matrices, this.textRenderer, addedPackDialog, (int) (this.width * 0.5), 21, 0xFFFFFF);
+		} else {
+			drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.select.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int)(this.width * 0.25), 21, 16777215);
+			drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.configure.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int)(this.width * 0.75), 21, 16777215);
 		}
 
 		super.render(matrices, mouseX, mouseY, delta);
@@ -125,12 +126,15 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				return;
 			}
 		}
+		this.shaderPacks.refresh();
 		if (packs.size() > 0) {
 			if (packs.size() == 1) {
+				String packName = packs.get(0).getFileName().toString();
 				this.addedPackDialog = new TranslatableText(
 						"options.iris.shaderPackSelection.addedPack",
-						packs.get(0).getFileName().toString()
+						packName
 				).formatted(Formatting.ITALIC, Formatting.YELLOW);
+				this.shaderPacks.select(packName);
 			} else {
 				this.addedPackDialog = new TranslatableText(
 						"options.iris.shaderPackSelection.addedPacks",
@@ -143,7 +147,6 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			).formatted(Formatting.ITALIC, Formatting.RED);
 		}
 		this.addedPackDialogTimer = 100;
-		this.shaderPacks.refresh();
 	}
 
 	@Override

@@ -86,6 +86,16 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 		this.addEntry(entry);
 	}
 
+	public void select(String name) {
+		for (int i = 0; i < getEntryCount(); i++) {
+			BaseEntry entry = getEntry(i);
+			if (entry instanceof ShaderPackEntry && ((ShaderPackEntry)entry).packName.equals(name)) {
+				setSelected(entry);
+				return;
+			}
+		}
+	}
+
 	public static abstract class BaseEntry extends AlwaysSelectedEntryListWidget.Entry<BaseEntry> {
 		protected BaseEntry() {}
 	}
