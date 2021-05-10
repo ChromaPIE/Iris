@@ -58,7 +58,7 @@ public class PackDirectives {
 		final String key = directive.getKey();
 		final String value = directive.getValue();
 
-		Iris.logger.info("Found potential directive: " + type + " " + key + " = " + value);
+		Iris.logger.debug("Found potential directive: " + type + " " + key + " = " + value);
 
 		if (type == ConstDirectiveParser.Type.INT && key.endsWith("Format")) {
 			String bufferName = key.substring(0, key.length() - "Format".length());

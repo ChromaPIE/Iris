@@ -1,8 +1,9 @@
-package net.coderbot.iris.mixin;
+package net.coderbot.iris.mixin.gui;
 
 import net.coderbot.iris.gui.screen.HudHideable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,6 +18,10 @@ public class MixinInGameHud {
 
 	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
 	public void iris$handleHudHidingScreens(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
-		if (this.client.currentScreen instanceof HudHideable) ci.cancel();
+		Screen screen = this.client.currentScreen;
+
+		if (screen instanceof HudHideable) {
+			ci.cancel();
+		}
 	}
 }

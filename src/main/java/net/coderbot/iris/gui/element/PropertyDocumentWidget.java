@@ -16,6 +16,8 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<PropertyDocumentWidget.PropertyEntry> {
     protected Map<String, PropertyList> document = new HashMap<>();
@@ -23,7 +25,9 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
     protected int rowWidth = 0;
     protected boolean resizedRows = false;
 
-    protected Runnable save = () -> {};
+    protected Supplier<Boolean> save = () -> {
+		return null;
+	};
     protected Runnable load = () -> {};
 
     public PropertyDocumentWidget(MinecraftClient client, int width, int height, int top, int bottom, int left, int right, int itemHeight) {
@@ -38,7 +42,7 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
 
     @Override
     public int getRowWidth() {
-        return resizedRows ? rowWidth : super.getRowWidth();
+        return resizedRows ? rowWidth : width;
     }
 
     public void addPage(String page, PropertyList properties) {
@@ -63,15 +67,16 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
         return document.getOrDefault(name, new PropertyList(new TitleProperty(new TranslatableText("page.iris.notFound").formatted(Formatting.DARK_RED))));
     }
 
-    public void saveProperties() {
-        save.run();
+    // Returns a boolean of whether any properties changed or not
+    public boolean saveProperties() {
+        return save.get();
     }
 
     public void loadProperties() {
         load.run();
     }
 
-    public void onSave(Runnable procedure) {
+    public void onSave(Supplier<Boolean> procedure) {
         this.save = procedure;
     }
 
@@ -101,7 +106,7 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
 
 		if (pack == null) {
 			document.put("screen", new PropertyList(
-					new TitleProperty(new LiteralText(shaderName).formatted(Formatting.BOLD), 0xAAFFFFFF),
+					new TitleProperty(GuiUtil.trimmed(tr, shaderName, bw, false, true, Formatting.BOLD), 0xAAFFFFFF),
 					new Property(GuiUtil.trimmed(tr, "page.iris.noShaders", bw, true, true, Formatting.ITALIC))
 			));
 			return document;
@@ -130,7 +135,9 @@ public class PropertyDocumentWidget extends ShaderScreenEntryListWidget<Property
             if (s.startsWith("screen.") || s.equals("screen")) {
                 PropertyList page = new PropertyList();
                 boolean subScreen = s.startsWith("screen.");
-                page.add(new TitleProperty(GuiUtil.trimmed(tr, subScreen ? s : shaderName, width - 60, subScreen, true, Formatting.BOLD), 0xAAFFFFFF));
+				boolean screenHasTranslation = subScreen & I18n.hasTranslation(s);
+				String untranslatedScreenName = subScreen ? s.substring(7) : s.substring(6);
+                page.add(new TitleProperty(GuiUtil.trimmed(tr, subScreen ? (screenHasTranslation ? s : untranslatedScreenName) : shaderName, width - 60, screenHasTranslation, true, Formatting.BOLD), 0xAAFFFFFF));
                 String[] screenOptions = shaderProperties.getProperty(s).split(" ");
                 for (String p : screenOptions) {
                     if (p.equals("<profile>")) {

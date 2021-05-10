@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A class dedicated to storing the config values of shaderpacks.
@@ -97,9 +98,9 @@ public class IrisConfig {
 		shaderPackName = name;
 		try {
 			save();
-		} catch (IOException e) {
-			Iris.logger.error("Error setting shader pack!");
-			e.printStackTrace();
+		}  catch (IOException e) {
+			Iris.logger.error("Error saving configuration file, unable to set shader pack name");
+			Iris.logger.catching(e);
 		}
 	}
 
@@ -186,9 +187,9 @@ public class IrisConfig {
 	 */
 	public void read(Properties properties) {
 		shaderPackName = properties.getProperty("shaderPack", this.shaderPackName);
-		enableShaders = Boolean.parseBoolean(properties.getProperty("enableShaders"));
+		enableShaders = Boolean.parseBoolean(properties.getProperty("enableShaders", String.valueOf(this.enableShaders)));
 		uiTheme = properties.getProperty("uiTheme", this.uiTheme);
-		condenseShaderConfig = Boolean.parseBoolean(properties.getProperty("condenseShaderConfig"));
+		condenseShaderConfig = Boolean.parseBoolean(properties.getProperty("condenseShaderConfig", String.valueOf(this.condenseShaderConfig)));
 
 		if (shaderPackName == null) {
 			shaderPackName = "";
@@ -249,10 +250,10 @@ public class IrisConfig {
 				0x82ffffff, 0x82ff0000, 0x82ff8800, 0x82ffd800, 0x8288ff00, 0x8200d8ff, 0x823048ff, 0x829900ff, 0x82ffffff
 		));
 		page.add(new FunctionalButtonProperty(widget, () -> MinecraftClient.getInstance().openScreen(new ShaderPackScreen(parent)), new TranslatableText("options.iris.shaderPackSelection.title"), LinkProperty.Align.CENTER_LEFT));
-		int optionTextWidthHalf = (int)((width * 0.5) * 0.6) - 21;
-		page.addAllPairs(ImmutableList.of(
-				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(tr, "property.iris.uiTheme", optionTextWidthHalf, true, true), false, false),
-				new BooleanOptionProperty(widget, false, "condenseShaderConfig", GuiUtil.trimmed(tr, "property.iris.condenseShaderConfig", optionTextWidthHalf, true, true), false)
+		int textWidth = (int)(width * 0.6) - 18;
+		page.addAll(ImmutableList.of(
+				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(tr, "property.iris.uiTheme", textWidth, true, true), false, false),
+				new BooleanOptionProperty(widget, true, "condenseShaderConfig", GuiUtil.trimmed(tr, "property.iris.condenseShaderConfig", textWidth, true, true), false)
 		));
 		document.put("main", page);
 		widget.onSave(() -> {
@@ -270,6 +271,7 @@ public class IrisConfig {
 				Iris.logger.error("Failed to save config!");
 				e.printStackTrace();
 			}
+			return true;
 		});
 		widget.onLoad(() -> {
 			try {

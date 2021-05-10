@@ -4,14 +4,15 @@ import com.google.common.collect.ImmutableList;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.GuiUtil;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.font.TextVisitFactory;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.MathHelper;
+import org.apache.commons.lang3.mutable.MutableFloat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,12 +26,13 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 
 	public ShaderPackListWidget(MinecraftClient client, int width, int height, int top, int bottom, int left, int right) {
 		super(client, width, height, top, bottom, left, right, 20);
+
 		refresh();
 	}
 
 	@Override
 	public int getRowWidth() {
-		return width - 4;
+		return width - 12;
 	}
 
 	@Override
@@ -40,6 +42,7 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 
 	public void refresh() {
 		this.clearEntries();
+
 		try {
 			Path path = Iris.SHADERPACK_DIR;
 			int index = -1;
@@ -53,6 +56,7 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 
 			for (Path folder : folders) {
 				String name = folder.getFileName().toString();
+
 				if (!BUILTIN_PACKS.contains(name)) {
 					index++;
 					addEntry(index, name);
@@ -61,7 +65,8 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 
 			this.addEntry(new LabelEntry(PACK_LIST_LABEL));
 		} catch (Throwable e) {
-			e.printStackTrace();
+			Iris.logger.error("Error reading files while constructing selection UI");
+			Iris.logger.catching(e);
 		}
 	}
 
@@ -83,14 +88,17 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 				this.setSelected(entry);
 			}
 		}
+
 		this.addEntry(entry);
 	}
 
 	public void select(String name) {
 		for (int i = 0; i < getEntryCount(); i++) {
 			BaseEntry entry = getEntry(i);
+
 			if (entry instanceof ShaderPackEntry && ((ShaderPackEntry)entry).packName.equals(name)) {
 				setSelected(entry);
+
 				return;
 			}
 		}
@@ -124,16 +132,23 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 			TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
 			int color = 0xFFFFFF;
 			String name = packName;
+
+			// For some reason, the method that getWidth uses ignores the style passed to it and uses the empty style
+			// TODO: Find a workaround for this
 			if (textRenderer.getWidth(new LiteralText(name).formatted(Formatting.BOLD)) > this.list.getRowWidth() - 3) {
 				name = textRenderer.trimToWidth(name, this.list.getRowWidth() - 8) + "...";
 			}
+
 			MutableText text = new LiteralText(name);
+
 			if (this.isMouseOver(mouseX, mouseY)) {
 				text = text.formatted(Formatting.BOLD);
 			}
+
 			if (this.isSelected()) {
 				color = 0xFFF263;
 			}
+
 			drawCenteredText(matrices, textRenderer, text, (x + entryWidth / 2) - 2, y + (entryHeight - 11) / 2, color);
 		}
 
@@ -143,6 +158,7 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 				this.list.select(this.index);
 				return true;
 			}
+
 			return false;
 		}
 	}

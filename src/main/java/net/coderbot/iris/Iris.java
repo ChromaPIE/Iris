@@ -301,8 +301,10 @@ public class Iris implements ClientModInitializer {
 						.filter(Files::isDirectory)
 						.anyMatch(path -> path.endsWith("shaders"));
 			} catch (IOException ignored) {
+				// ignored, not a valid shader pack.
 			}
 		}
+
 		if (pack.toString().endsWith(".zip")) {
 			try {
 				FileSystem zipSystem = FileSystems.newFileSystem(pack, Iris.class.getClassLoader());
@@ -310,8 +312,11 @@ public class Iris implements ClientModInitializer {
 				return Files.walk(root)
 						.filter(Files::isDirectory)
 						.anyMatch(path -> path.endsWith("shaders"));
-			} catch (IOException ignored) {}
+			} catch (IOException ignored) {
+				// ignored, not a valid shader pack.
+			}
 		}
+
 		return false;
 	}
 

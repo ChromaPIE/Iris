@@ -19,7 +19,7 @@ public abstract class ShaderScreenEntryListWidget<E extends AlwaysSelectedEntryL
 
     @Override
     public int getRowWidth() {
-        return width - 4;
+        return width - 6;
     }
 
     @Override
