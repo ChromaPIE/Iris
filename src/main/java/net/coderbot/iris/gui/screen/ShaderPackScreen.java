@@ -287,9 +287,27 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				propertyList.forEvery(property -> {
 					if (property instanceof OptionProperty) {
 						String key = ((OptionProperty<?>)property).getKey();
-						if (!((OptionProperty<?>) property).getValue().toString().equals(config.getConfigProperties().getProperty(key))) {
-							propertiesChanged.set(true);
-							config.getConfigProperties().setProperty(key, ((OptionProperty<?>)property).getValue().toString());
+						if (property instanceof IntOptionProperty) {
+							Option<Integer> opt = config.getIntegerOption(key);
+							if (opt != null && !opt.getValue().equals(((IntOptionProperty) property).getValue())) {
+								opt.setValue(((IntOptionProperty) property).getValue());
+								opt.save(config.getConfigProperties());
+								propertiesChanged.set(true);
+							}
+						} else if (property instanceof FloatOptionProperty) {
+							Option<Float> opt = config.getFloatOption(key);
+							if (opt != null && !opt.getValue().equals(((OptionProperty<?>) property).getValue())) {
+								opt.setValue(((FloatOptionProperty) property).getValue());
+								opt.save(config.getConfigProperties());
+								propertiesChanged.set(true);
+							}
+						} else if (property instanceof BooleanOptionProperty) {
+							Option<Boolean> opt = config.getBooleanOption(key);
+							if (opt != null && !opt.getValue().equals(((BooleanOptionProperty) property).getValue())) {
+								opt.setValue(((BooleanOptionProperty) property).getValue());
+								opt.save(config.getConfigProperties());
+								propertiesChanged.set(true);
+							}
 						}
 					}
 				});
