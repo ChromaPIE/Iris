@@ -44,7 +44,7 @@ public class ShaderPackListWidget extends ShaderScreenEntryListWidget<ShaderPack
 		this.clearEntries();
 
 		try {
-			Path path = Iris.SHADERPACK_DIR;
+			Path path = Iris.SHADERPACKS_DIRECTORY;
 			int index = -1;
 
 			for (String pack : BUILTIN_PACKS) {

@@ -42,9 +42,9 @@ public class ShaderPack {
 
 	private final IdMap idMap;
 	private final Map<String, Map<String, String>> langMap;
+	private final CustomTexture customNoiseTexture;
 	private final ShaderPackConfig config;
 	private final ShaderProperties shaderProperties;
-	private final CustomTexture customNoiseTexture;
 
 	public final CustomUniforms.Builder customUniforms;
 

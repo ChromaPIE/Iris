@@ -1,6 +1,6 @@
 package net.coderbot.iris.shaderpack;
 
-import static net.coderbot.iris.Iris.SHADERPACK_DIR;
+import static net.coderbot.iris.Iris.SHADERPACKS_DIRECTORY;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,8 +20,8 @@ public class ShaderPackConfig {
 	private final Map<String, Option<Integer>> integerOptions = new HashMap<>();
 
 	public ShaderPackConfig(String name) {
-		// Optifine uses txt files, so we should do the same
-		shaderPackConfigPath = SHADERPACK_DIR.resolve(name + ".txt");
+		//optifine uses txt files, so we should do the same
+		shaderPackConfigPath = SHADERPACKS_DIRECTORY.resolve(name + ".txt");
 		configProperties = new Properties();
 		comment = "This file stores the shaderpack configuration for the shaderpack " + name;
 	}
@@ -43,6 +43,18 @@ public class ShaderPackConfig {
 		return integerOptions.values();
 	}
 
+	Map<String, Option<Boolean>> getBooleanOptionsMap(){
+		return booleanOptions;
+	}
+
+	Map<String, Option<Float>> getFloatOptionsMap() {
+		return floatOptions;
+	}
+
+	Map<String, Option<Integer>> getIntegerOptionsMap() {
+		return integerOptions;
+	}
+
 	public Option<Boolean> getBooleanOption(String key) {
 		return booleanOptions.get(key);
 	}
@@ -55,16 +67,53 @@ public class ShaderPackConfig {
 		return floatOptions.get(key);
 	}
 
-	public void addBooleanOption(Option<Boolean> option) {
+	public Option<Boolean> addBooleanOption(Option<Boolean> option) {
+
+		Option<Boolean> booleanOption = booleanOptions.get(option.getName());
+
+		//if there is already a proccessed option with the same name
+		if (booleanOption != null) {
+			// If the already processed option has a different value than ours, that means that we have an option that is already been modified
+			if (booleanOption.getDefaultValue() != option.getDefaultValue()) {
+				return booleanOption;
+			}
+		}
+
 		booleanOptions.put(option.getName(), option);
+
+		return option;
 	}
 
-	public void addIntegerOption(Option<Integer> option) {
+	public Option<Integer> addIntegerOption(Option<Integer> option) {
+
+		Option<Integer> integerOption = integerOptions.get(option.getName());
+
+		//if there is already a proccessed option with the same name
+		if (integerOption != null) {
+			// If the already processed option has a different value than ours, that means that we have an option that is already been modified
+			if (!integerOption.getDefaultValue().equals(option.getDefaultValue())) {
+				return integerOption;
+			}
+		}
 		integerOptions.put(option.getName(), option);
+
+		return option;
 	}
 
-	public void addFloatOption(Option<Float> option) {
+	public Option<Float> addFloatOption(Option<Float> option) {
+
+		Option<Float> floatOption = floatOptions.get(option.getName());
+
+		//if there is already a proccessed option with the same name
+		if (floatOption != null) {
+			// If the already processed option has a different value than ours, that means that we have an option that is already been modified
+			if (!floatOption.getDefaultValue().equals(option.getDefaultValue())) {
+				return floatOption;
+			}
+		}
+
 		floatOptions.put(option.getName(), option);
+		return floatOption;
 	}
 
 	/**

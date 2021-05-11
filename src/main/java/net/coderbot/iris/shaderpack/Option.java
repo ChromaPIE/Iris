@@ -27,8 +27,9 @@ public class Option<T> {
 		this.allowedValues = allowedValues;
 		this.name = name;
 		this.value = defaultValue;
-		//only add to the list if it is already not empty.
-		//If it is empty, then we know that it can be set to any value
+
+		// Only add the default value to the list of allowed values if the list is already not empty.
+		// If the list is empty, then we know that this option can be set to any value.
 		if (!allowedValues.contains(defaultValue) && !allowedValues.isEmpty()) {
 			allowedValues.add(defaultValue);
 		}
@@ -42,6 +43,10 @@ public class Option<T> {
 	 * @param properties the properties to append to
 	 */
 	public void save(Properties properties) {
+		// If the option is on it's default value, then do not save it.
+		if (isDefaultValue()) {
+			return;
+		}
 		properties.put(this.name, this.value.toString());
 	}
 
@@ -115,6 +120,15 @@ public class Option<T> {
 	 */
 	public Function<String, T> getDeserializer() {
 		return deserializer;
+	}
+
+	/**
+	 * Checks if the Option is set to it's default setting
+	 *
+	 * @return if the option's value is the default.
+	 */
+	public boolean isDefaultValue() {
+		return this.value.equals(this.defaultValue);
 	}
 
 	/**

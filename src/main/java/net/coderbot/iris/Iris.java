@@ -2,6 +2,7 @@ package net.coderbot.iris;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.zip.ZipException;
 
@@ -38,7 +39,7 @@ public class Iris implements ClientModInitializer {
 	public static final String MODID = "iris";
 	public static final Logger logger = LogManager.getLogger(MODID);
 
-	public static final Path SHADERPACK_DIR = FabricLoader.getInstance().getGameDir().resolve("shaderpacks");
+	public static final Path SHADERPACKS_DIRECTORY = FabricLoader.getInstance().getGameDir().resolve("shaderpacks");
 
 	private static ShaderPack currentPack;
 	private static String currentPackName;
@@ -66,7 +67,7 @@ public class Iris implements ClientModInitializer {
 		);
 
 		try {
-			Files.createDirectories(SHADERPACK_DIR);
+			Files.createDirectories(SHADERPACKS_DIRECTORY);
 		} catch (IOException e) {
 			logger.warn("Failed to create the shaderpacks directory!");
 			logger.catching(Level.WARN, e);
@@ -182,7 +183,7 @@ public class Iris implements ClientModInitializer {
 	}
 
 	private static boolean loadExternalShaderpack(String name) {
-		Path shaderPackRoot = SHADERPACK_DIR.resolve(name);
+		Path shaderPackRoot = SHADERPACKS_DIRECTORY.resolve(name);
 		Path shaderPackPath;
 
 		if (shaderPackRoot.toString().endsWith(".zip")) {

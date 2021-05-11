@@ -3,6 +3,7 @@ package net.coderbot.iris.shaderpack;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,33 +56,7 @@ public class DefineOptionParser {
 		remove matching a "f" or a "F"
 	 */
 	private static final Pattern INTEGER_OPTION_PATTERN = Pattern.compile("(?<define>#define)\\s+(?<name>\\w+)\\s+(?<value>-?\\d+)\\s*(?<comment>(?<commentChar>//+)(?<commentContent>.*))?");
-	/*
-	Some shaderpacks like sildurs have #define directives that are named with the program name
-	like #define gbuffers_textured
-	optifine does not use these in their config so we will not as well
-	TODO figure what optifine does with these program defined names and implement
-	 */
-	private static final Set<String> IGNORED_PROGRAM_NAMES = Util.make(new HashSet<>(), (set) -> {
-		for (int i = 0; i < 16; i++) {
-			set.add("composite" + i);
-		}
-		set.add("composite");
-		set.add("final");
-		set.add("deferred");
-		set.add("gbuffers_basic");
-		set.add("gbuffers_textured");
-		set.add("gbuffers_textured_lit");
-		set.add("gbuffers_terrain");
-		set.add("gbuffers_water");
-		set.add("gbuffers_skybasic");
-		set.add("gbuffers_skytextured");
-		set.add("gbuffers_clouds");
-		set.add("gbuffers_entities");
-		set.add("gbuffers_block");
-		set.add("gbuffers_weather");
-		set.add("gbuffers_hand");
-		set.add("gbuffers_shadows");
-	});
+
 
 	public static void processConfigOptions(List<String> lines, ShaderPackConfig config) {
 		for (int i = 0; i < lines.size(); i++) {
@@ -105,7 +80,7 @@ public class DefineOptionParser {
 					continue; //continue if the name is not apparent. Not sure how this is possible if the regex matches, but to be safe, let's ignore it
 
 
-				if (!containsIfDef(lines, name) || name.startsWith("MC_") || IGNORED_PROGRAM_NAMES.contains(name)) {
+				if (!containsIfDef(lines, name) || name.startsWith("MC_")) {
 					continue;
 				}
 
@@ -123,12 +98,12 @@ public class DefineOptionParser {
 
 					if (name == null || value == null) continue; // If null, continue
 
-					if (name.startsWith("MC_") || IGNORED_PROGRAM_NAMES.contains(name)) continue;
+					if (name.startsWith("MC_")) continue;
 
 					Option<Float> floatOption = createFloatOption(name, comment, value, config);
 
 					if (floatOption != null) {
-						String line = trimmedLine.replace(value, floatOption.getValue().toString());
+						String line = trimmedLine.replaceFirst(value, floatOption.getValue().toString());
 						lines.set(i, line);
 					}
 
@@ -139,12 +114,12 @@ public class DefineOptionParser {
 
 					if (name == null || value == null) continue;
 
-					if (name.startsWith("MC_") || IGNORED_PROGRAM_NAMES.contains(name)) continue;
+					if (name.startsWith("MC_")) continue;
 
 					Option<Integer> integerOption = createIntegerOption(name, comment, value, config);
 
 					if (integerOption != null) {
-						String line = trimmedLine.replace(value, integerOption.getValue().toString());
+						String line = trimmedLine.replaceFirst(value, integerOption.getValue().toString());
 						lines.set(i, line);
 					}
 				}
@@ -203,9 +178,7 @@ public class DefineOptionParser {
 		Option<Boolean> booleanOption = new Option<>(comment, Arrays.asList(true, false), name, defaultValue, Boolean::parseBoolean);
 
 		booleanOption = config.processOption(booleanOption);
-		config.addBooleanOption(booleanOption);
-
-		return booleanOption;
+		return config.addBooleanOption(booleanOption);
 	}
 
 	/**
@@ -242,9 +215,9 @@ public class DefineOptionParser {
 		Option<Float> floatOption = new Option<>(comment, floats, name, floatValue, Float::parseFloat);
 
 		floatOption = config.processOption(floatOption);
-		config.addFloatOption(floatOption);
 
-		return floatOption;
+
+		return config.addFloatOption(floatOption);
 	}
 
 	/**
@@ -283,8 +256,8 @@ public class DefineOptionParser {
 		Option<Integer> integerOption = new Option<>(comment, integers, name, intValue, (string) -> (int) Float.parseFloat(string));//parse as float and cast to string to be flexible
 
 		integerOption = config.processOption(integerOption);
-		config.addIntegerOption(integerOption);
-		return integerOption;
+
+		return config.addIntegerOption(integerOption);
 	}
 
 	/**
