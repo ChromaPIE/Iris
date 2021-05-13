@@ -6,6 +6,8 @@ import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -176,7 +178,7 @@ public class ShaderPack {
 			Properties properties = new Properties();
 
 			try {
-				properties.load(Files.newInputStream(path));
+				properties.load(new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8));
 			} catch (IOException e) {
 				Iris.logger.error("Error while net.coderbot.iris.parsing languages for shaderpacks! Expected File Path: {}", path);
 				Iris.logger.catching(Level.ERROR, e);
