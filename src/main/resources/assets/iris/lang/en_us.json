@@ -7,7 +7,6 @@
   "iris.keybinds": "Iris",
   "iris.shaders.reloaded.failure": "Failed to reload shaders! Reason: %s",
   "iris.shaders.toggled.failure": "Failed to toggle shaders! Reason: %s",
-  "iris.shaders.toggled.failure.noShaders": "There are no shaders to toggle to!",
 
   "option.iris.back": "Back",
   "option.iris.profile": "Profile",
@@ -37,6 +36,8 @@
   "options.iris.shaderPackSelection.failedAddSingle": "\"%s\" is not a valid Shader Pack",
   "options.iris.shaderPackSelection.copyError": "Could not add Shader Pack \"%s\"",
   "options.iris.shaderPackSelection.copyErrorAlreadyExists": "\"%s\" is already in your Shader Packs folder!",
+  "options.iris.shaders.disabled": "Shaders: Disabled",
+  "options.iris.shaders.enabled": "Shaders: Enabled",
 
   "pack.iris.select.title": "Select",
   "pack.iris.configure.title": "Configure",

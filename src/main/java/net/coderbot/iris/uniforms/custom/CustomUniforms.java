@@ -12,10 +12,15 @@ import kroppeb.stareval.token.ExpressionToken;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gl.uniform.LocationalUniformHolder;
 import net.coderbot.iris.gl.uniform.UniformHolder;
+import net.coderbot.iris.gl.uniform.UniformType;
 import net.coderbot.iris.parsing.IrisFunctions;
 import net.coderbot.iris.parsing.IrisOptions;
+import net.coderbot.iris.parsing.MatrixType;
 import net.coderbot.iris.parsing.VectorType;
-import net.coderbot.iris.uniforms.custom.cached.CachedUniform;
+import net.coderbot.iris.uniforms.custom.cached.*;
+import net.coderbot.iris.vendored.joml.Vector2f;
+import net.coderbot.iris.vendored.joml.Vector3f;
+import net.coderbot.iris.vendored.joml.Vector4f;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -182,7 +187,10 @@ public class CustomUniforms implements FunctionContext {
 	public void assignTo(LocationalUniformHolder targetHolder) {
 		Object2IntMap<CachedUniform> locations = new Object2IntOpenHashMap<>();
 		for (CachedUniform uniform : this.uniformOrder) {
-			OptionalInt location = targetHolder.location(uniform.getName());
+			UniformType uniformType = getUniformType(uniform.getType());
+
+			OptionalInt location = targetHolder.location(uniform.getName(), uniformType);
+
 			if (location.isPresent()) {
 				locations.put(uniform, location.getAsInt());
 			}
@@ -282,6 +290,30 @@ public class CustomUniforms implements FunctionContext {
 		if (customUniform != null)
 			return customUniform;
 		throw new RuntimeException("Unknown variable: " + name);
+	}
+
+	public UniformType getUniformType(Type type) {
+		if (type.equals(Type.Boolean)) {
+			// In opengl booleans are represented as ints
+			return UniformType.INT;
+		} else if (type.equals(Type.Int)) {
+			return UniformType.INT;
+		} else if (type.equals(Type.Float)) {
+			return UniformType.FLOAT;
+		} else if (type.equals(VectorType.VEC2)) {
+			return UniformType.VEC2;
+		} else if (type.equals(VectorType.I_VEC2)) {
+			return UniformType.VEC2I;
+		} else if (type.equals(VectorType.VEC3)) {
+			return UniformType.VEC3;
+		} else if (type.equals(VectorType.VEC4)) {
+			return UniformType.VEC4;
+		} else if (type.equals(MatrixType.MAT4)) {
+			return UniformType.MAT4;
+		} else {
+			Iris.logger.warn("Could not get UniformType for Type: " + type);
+			return null;
+		}
 	}
 
 	public static class Builder {

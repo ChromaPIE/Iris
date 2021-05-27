@@ -53,7 +53,7 @@ public class IrisConfig {
 	private Path propertiesPath;
 
 	public IrisConfig() {
-		shaderPackName = "";
+		shaderPackName = null;
 		enableShaders = false;
 		propertiesPath = FabricLoader.getInstance().getConfigDir().resolve("iris.properties");
 	}
@@ -76,32 +76,49 @@ public class IrisConfig {
 	 * @return if the shaderpack is internal
 	 */
 	public boolean isInternal() {
-		return shaderPackName != null && shaderPackName.equals("(internal)");
+		return areShadersEnabled() && shaderPackName == null;
 	}
 
 	/**
 	 * Returns the name of the current shaderpack
 	 *
-	 * @return Returns the current shaderpack name - if internal shaders are being used it returns "(internal)", and if shaders are off it returns "(off)".
+	 * @return Returns the current shaderpack name - if internal shaders are being used it returns "(internal)"
 	 */
 	public String getShaderPackName() {
+		if (shaderPackName == null) {
+			return "(internal)";
+		}
+
 		return shaderPackName;
 	}
 
 	/**
-	 * Sets the shader pack name, and tries to save the config file.
-	 * Will print an error if the config file cannot be saved for whatever reason.
-	 *
-	 * @param name The name of the shader pack
+	 * Sets the name of the current shaderpack
 	 */
-	public void setShaderPackName(@NotNull String name) {
-		shaderPackName = name;
-		try {
-			save();
-		}  catch (IOException e) {
-			Iris.logger.error("Error saving configuration file, unable to set shader pack name");
-			Iris.logger.catching(e);
+	public void setShaderPackName(String name) {
+		if (name.equals("(internal)")) {
+			this.shaderPackName = null;
+		} else {
+			this.shaderPackName = name;
 		}
+	}
+
+
+	/**
+	 * Gets whether to use condensed view for shader pack configuration.
+	 * @return Whether to use condensed view or not
+	 */
+	public boolean getIfCondensedShaderConfig() {
+		return condenseShaderConfig;
+	}
+
+	/**
+	 * Sets whether to use condensed view for shader pack configuration.
+	 *
+	 * @param condense Whether to use condensed view or not
+	 */
+	public void setIfCondensedShaderConfig(boolean condense) {
+		this.condenseShaderConfig = condense;
 	}
 
 	/**
@@ -131,53 +148,10 @@ public class IrisConfig {
 	}
 
 	/**
-	 * Disables shaders
+	 * Sets whether shaders should be used for rendering.
 	 */
-	public void setShadersDisabled() {
-		enableShaders = false;
-		try {
-			save();
-		} catch (IOException e) {
-			Iris.logger.error("Error setting shaders disabled!");
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Enables shaders
-	 */
-	public void setShadersEnabled() {
-		enableShaders = true;
-		try {
-			save();
-		} catch (IOException e) {
-			Iris.logger.error("Error setting shaders enabled!");
-			e.printStackTrace();
-		}
-	}
-
-
-	/**
-	 * Gets whether to use condensed view for shader pack configuration.
-	 * @return Whether to use condensed view or not
-	 */
-	public boolean getIfCondensedShaderConfig() {
-		return condenseShaderConfig;
-	}
-
-	/**
-	 * Sets whether to use condensed view for shader pack configuration.
-	 *
-	 * @param condense Whether to use condensed view or not
-	 */
-	public void setIfCondensedShaderConfig(boolean condense) {
-		this.condenseShaderConfig = condense;
-		try {
-			save();
-		} catch (IOException e) {
-			Iris.logger.error("Error setting config for condensed shader pack config view!");
-			e.printStackTrace();
-		}
+	public void setShadersEnabled(boolean enabled) {
+		this.enableShaders = enabled;
 	}
 
 	/**
@@ -191,8 +165,8 @@ public class IrisConfig {
 		uiTheme = properties.getProperty("uiTheme", this.uiTheme);
 		condenseShaderConfig = Boolean.parseBoolean(properties.getProperty("condenseShaderConfig", String.valueOf(this.condenseShaderConfig)));
 
-		if (shaderPackName == null) {
-			shaderPackName = "";
+		if (shaderPackName != null && shaderPackName.equals("(internal)")) {
+			shaderPackName = null;
 		}
 	}
 

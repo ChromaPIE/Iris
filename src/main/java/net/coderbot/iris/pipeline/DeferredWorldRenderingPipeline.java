@@ -30,6 +30,7 @@ import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.util.Identifier;
 import net.coderbot.iris.rendertarget.*;
 import net.coderbot.iris.uniforms.CommonUniforms;
+import net.coderbot.iris.uniforms.FrameUpdateNotifier;
 import net.coderbot.iris.uniforms.SamplerUniforms;
 import net.minecraft.client.texture.AbstractTexture;
 import org.apache.logging.log4j.Level;
@@ -110,19 +111,19 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 		// TODO should we clear this at the end of the constructor?
 		this.customUniforms = programs.getPack().customUniforms.build(
-				CameraUniforms::addCameraUniforms,
+				uniforms -> CameraUniforms.addCameraUniforms(uniforms, FrameUpdateNotifier.INSTANCE),
 				ViewportUniforms::addViewportUniforms,
 				WorldTimeUniforms::addWorldTimeUniforms,
 				SystemTimeUniforms::addSystemTimeUniforms,
 				new CelestialUniforms(programs.getPackDirectives().getSunPathRotation())::addCelestialUniforms,
-				WeatherUniforms::addWeatherUniforms,
+				uniforms -> WeatherUniforms.addWeatherUniforms(uniforms, FrameUpdateNotifier.INSTANCE),
 				holder -> IdMapUniforms.addIdMapUniforms(holder, programs.getPack().getIdMap()),
 				MatrixUniforms::addMatrixUniforms,
-				CommonUniforms::generalCommonUniforms,
+				uniforms -> CommonUniforms.generalCommonUniforms(uniforms, FrameUpdateNotifier.INSTANCE),
 				BiomeParameters::biomeParameters
 		);
 
-		this.renderTargets = new RenderTargets(MinecraftClient.getInstance().getFramebuffer(), programs.getPackDirectives());
+		this.renderTargets = new RenderTargets(MinecraftClient.getInstance().getFramebuffer(), programs.getPackDirectives().getRenderTargetDirectives());
 		this.waterId = programs.getPack().getIdMap().getBlockProperties().getOrDefault(Registry.BLOCK.get(WATER_IDENTIFIER).getDefaultState(), -1);
 		this.sunPathRotation = programs.getPackDirectives().getSunPathRotation();
 
@@ -143,7 +144,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		this.glint = programs.getGbuffersGlint().map(this::createPass).orElse(textured);
 		this.eyes = programs.getGbuffersEntityEyes().map(this::createPass).orElse(textured);
 
-		int[] buffersToBeCleared = programs.getPackDirectives().getBuffersToBeCleared().toIntArray();
+		int[] buffersToBeCleared = programs.getPackDirectives().getRenderTargetDirectives().getBuffersToBeCleared().toIntArray();
 
 		this.clearAltBuffers = renderTargets.createFramebufferWritingToAlt(buffersToBeCleared);
 		this.clearMainBuffers = renderTargets.createFramebufferWritingToMain(buffersToBeCleared);

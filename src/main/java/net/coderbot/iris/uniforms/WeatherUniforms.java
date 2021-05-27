@@ -16,12 +16,12 @@ public class WeatherUniforms {
 	private WeatherUniforms() {
 	}
 
-	public static void addWeatherUniforms(UniformHolder uniforms) {
+	public static void addWeatherUniforms(UniformHolder uniforms, FrameUpdateNotifier updateNotifier) {
 		uniforms
 			.uniform1f(PER_TICK, "rainStrength", WeatherUniforms::getRainStrength)
 			// TODO: Parse the value of const float wetnessHalflife from the shaderpacks' fragment configuration
-			.uniform1f(PER_TICK, "wetness", new SmoothedFloat(600f, WeatherUniforms::getRainStrength));
-        }
+			.uniform1f(PER_TICK, "wetness", new SmoothedFloat(600f, WeatherUniforms::getRainStrength, updateNotifier));
+  	}
 
 	private static float getRainStrength() {
 		if (client.world == null) {

@@ -106,42 +106,23 @@ public class Iris implements ClientModInitializer {
 				}
 			} else if (toggleShadersKeybind.wasPressed()) {
 				IrisConfig config = getIrisConfig();
-				if (config.areShadersEnabled()) {
-					try {
-						config.setShadersDisabled();
+				try {
+					config.setShadersEnabled(!config.areShadersEnabled());
+					config.save();
 
-						reload();
-						if (minecraftClient.player != null) {
-							minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled", "off"), false);
-						}
-					} catch (Exception e) {
-						Iris.logger.error("Error while toggling shaders!", e);
-
-						if (minecraftClient.player != null) {
-							minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
-						}
-					}
-				} else if (!config.getShaderPackName().equals("")) {
-					try {
-						config.setShadersEnabled();
-
-						reload();
-						if (minecraftClient.player != null) {
-							minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled", currentPackName), false);
-						}
-					} catch (Exception e) {
-						Iris.logger.error("Error while toggling shaders!", e);
-
-						if (minecraftClient.player != null) {
-							minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
-						}
-
-						Iris.setShadersDisabled();
-					}
-				} else {
+					reload();
 					if (minecraftClient.player != null) {
-						minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled.failure.noShaders"), false);
+						minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled", config.areShadersEnabled() ? currentPackName : "off"), false);
 					}
+				} catch (Exception e) {
+					Iris.logger.error("Error while toggling shaders!", e);
+
+					if (minecraftClient.player != null) {
+						minecraftClient.player.sendMessage(new TranslatableText("iris.shaders.toggled.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
+					}
+
+					setShadersDisabled();
+					currentPackName = "(off) [fallback, check your logs for errors]";
 				}
 			} else if (shaderpackScreenKeybind.wasPressed()) {
 				minecraftClient.openScreen(new ShaderPackScreen(null));
@@ -164,7 +145,7 @@ public class Iris implements ClientModInitializer {
 				setShadersDisabled();
 				currentPackName = "(off) [fallback, check your logs for errors]";
 			}
-		} else if (irisConfig.isInternal()) {
+		} else {
 			try {
 				loadInternalShaderpack();
 			} catch (Exception e) {
@@ -175,10 +156,6 @@ public class Iris implements ClientModInitializer {
 				setShadersDisabled();
 				currentPackName = "(off) [fallback, check your logs for errors]";
 			}
-		} else {
-			// Not sure how we could even get to this else, but just in case...
-			logger.info("Shaders were... somehow disabled?");
-			setShadersDisabled();
 		}
 	}
 
@@ -238,7 +215,6 @@ public class Iris implements ClientModInitializer {
 
 		currentPackName = name;
 		internal = false;
-		getIrisConfig().setShadersEnabled();
 
 		logger.info("Using shaderpack: " + name);
 
@@ -278,28 +254,34 @@ public class Iris implements ClientModInitializer {
 			throw new RuntimeException("Failed to load internal shaderpack!", e);
 		}
 
-		getIrisConfig().setShaderPackName("(internal)");
-
 		logger.info("Using internal shaders");
 		currentPackName = "(internal)";
-
 		internal = true;
 	}
 
 	private static void setShadersDisabled() {
 		currentPack = null;
+		currentPackName = "(off)";
 		internal = false;
-
-		getIrisConfig().setShadersDisabled();
 
 		logger.info("Shaders are disabled");
 	}
 
 	public static boolean isValidShaderpack(Path pack) {
 		if (Files.isDirectory(pack)) {
+			// Sometimes the shaderpack directory itself can be
+			// identified as a shader pack due to it containing
+			// folders which contain "shaders" folders, this is
+			// necessary to check against that
+			if (pack.equals(SHADERPACKS_DIRECTORY)) {
+				return false;
+			}
 			try {
 				return Files.walk(pack)
 						.filter(Files::isDirectory)
+						// Prevent a pack simply named "shaders" from being
+						// identified as a valid pack
+						.filter(path -> !path.equals(pack))
 						.anyMatch(path -> path.endsWith("shaders"));
 			} catch (IOException ignored) {
 				// ignored, not a valid shader pack.

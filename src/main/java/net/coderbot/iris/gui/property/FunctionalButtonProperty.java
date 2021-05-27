@@ -15,7 +15,7 @@ public class FunctionalButtonProperty extends LinkProperty {
     @Override
     public boolean onClicked(double mouseX, double mouseY, int button) {
         if(button == 0) {
-            GuiUtil.playClickSound(1.0f);
+            GuiUtil.playButtonClickSound();
             onClick.run();
             return true;
         }

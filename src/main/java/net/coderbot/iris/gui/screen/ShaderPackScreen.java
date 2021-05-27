@@ -136,7 +136,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			String fileName = pack.getFileName().toString();
 
 			try {
-				Files.copy(pack, Iris.SHADERPACKS_DIRECTORY.resolve(fileName));
+				copyShaderPack(pack, fileName);
 			} catch (FileAlreadyExistsException e) {
 				this.addedPackDialog = new TranslatableText(
 						"options.iris.shaderPackSelection.copyErrorAlreadyExists",
@@ -210,6 +210,39 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		this.addedPackDialogTimer = 100;
 	}
 
+	private static void copyShaderPack(Path pack, String name) throws IOException {
+		Path target = Iris.SHADERPACKS_DIRECTORY.resolve(name);
+
+		// Copy the pack file into the shaderpacks folder.
+		Files.copy(pack, target);
+		// Zip or other archive files will be copied without issue,
+		// however normal folders will require additional handling below.
+
+		// Manually copy the contents of the pack if it is a folder
+		if (Files.isDirectory(pack)) {
+			// Use for loops instead of forEach due to createDirectory throwing an IOException
+			// which requires additional handling when used in a lambda
+
+			// Copy all sub folders, collected as a list in order to prevent issues with non-ordered sets
+			for (Path p : Files.walk(pack).filter(Files::isDirectory).collect(Collectors.toList())) {
+				Path folder = pack.relativize(p);
+
+				if (Files.exists(folder)) {
+					continue;
+				}
+
+				Files.createDirectory(target.resolve(folder));
+			}
+			// Copy all non-folder files
+			for (Path p : Files.walk(pack).filter(p -> !Files.isDirectory(p)).collect(Collectors.toSet())) {
+				Path file = pack.relativize(p);
+
+				Files.copy(p, target.resolve(file));
+			}
+		}
+
+	}
+
 	@Override
 	public void onClose() {
 		if (!dropChanges) {
@@ -236,16 +269,17 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		IrisConfig config = Iris.getIrisConfig();
 
 		String name = entry.getPackName();
-		if (name.equals("(off)")) {
-			if (!config.areShadersEnabled()) return;
+		boolean changed = this.shaderProperties.saveProperties();
+		if (config.areShadersEnabled() == this.shaderPackList.getEnableShadersButton().enabled && name.equals(config.getShaderPackName()) && !changed) return;
 
-			config.setShadersDisabled();
-		} else {
-			boolean changed = this.shaderProperties.saveProperties();
-			if (config.areShadersEnabled() && name.equals(config.getShaderPackName()) && !changed) return;
+		config.setShaderPackName(name);
+		config.setShadersEnabled(this.shaderPackList.getEnableShadersButton().enabled);
 
-			config.setShadersEnabled();
-			config.setShaderPackName(name);
+		try {
+			config.save();
+		} catch (IOException e) {
+			Iris.logger.error("Error saving configuration file!");
+			Iris.logger.catching(e);
 		}
 
 		try {
@@ -258,9 +292,13 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				this.client.player.sendMessage(new TranslatableText("iris.shaders.reloaded.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
 			}
 
-			Iris.getIrisConfig().setShadersDisabled();
-			// Set the selected shaderpack to off in the gui
-			this.shaderPackList.select(0);
+			Iris.getIrisConfig().setShadersEnabled(false);
+			try {
+				Iris.getIrisConfig().save();
+			} catch (IOException ex) {
+				Iris.logger.error("Error saving configuration file!");
+				Iris.logger.catching(ex);
+			}
 		}
 		this.reloadShaderConfig();
 	}
@@ -471,7 +509,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 
 		@Override
 		public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-			MinecraftClient.getInstance().getTextureManager().bindTexture(GuiUtil.WIDGETS_TEXTURE);
+			GuiUtil.bindIrisWidgetsTexture();
 			drawTexture(matrices, x, y, isMouseOver(mouseX, mouseY) ? 20 : 0, 0, 20, 20);
 
 			if (isMouseOver(mouseX, mouseY)) {
