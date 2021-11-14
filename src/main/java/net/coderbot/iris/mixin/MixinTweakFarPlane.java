@@ -1,10 +1,11 @@
 package net.coderbot.iris.mixin;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.Iris;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.renderer.GameRenderer;
+import org.lwjgl.opengl.GL;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,16 +38,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class MixinTweakFarPlane {
 	@Shadow
-	private float viewDistance;
+	private float renderDistance;
 
-	@Redirect(method = "getBasicProjectionMatrix(Lnet/minecraft/client/render/Camera;FZ)Lnet/minecraft/util/math/Matrix4f;", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;viewDistance:F"))
+	@Redirect(method = "getProjectionMatrix", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/GameRenderer;renderDistance:F"))
 	private float iris$tweakViewDistanceToMatchOptiFine(GameRenderer renderer) {
 		if (!Iris.getCurrentPack().isPresent()) {
 			// Don't mess with the far plane if no shaderpack is loaded
-			return this.viewDistance;
+			return this.renderDistance * 4.0F;
 		}
 
-		float tweakedViewDistance = this.viewDistance;
+		float tweakedViewDistance = this.renderDistance;
 
 		// Halve the distance of the far plane in the projection matrix from vanilla. Normally, the far plane is 4 times
 		// the view distance, but this makes it so that it is only two times the view distance.
@@ -55,15 +56,15 @@ public class MixinTweakFarPlane {
 		// Use a minimum distance for the far plane
 		// The real far plane will be 4 times this, so this will result in a far plane of 173 meters.
 		//
-		// Math.max returns the maximum of thw two values, so whenever tweakedViewDistance falls below 43.25F, this code
+		// Math.max returns the maximum of the two values, so whenever tweakedViewDistance falls below 43.25F, this code
 		// forces it to take on a value of 43.25F.
 		tweakedViewDistance = Math.max(43.25F, tweakedViewDistance);
 
 		return tweakedViewDistance;
 	}
 
-	@Inject(method = "renderWorld(FJLnet/minecraft/client/util/math/MatrixStack;)V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;viewDistance:F", shift = At.Shift.AFTER))
-	private void iris$tweakViewDistanceBasedOnFog(float tickDelta, long limitTime, MatrixStack matrix, CallbackInfo ci) {
+	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/GameRenderer;renderDistance:F", shift = At.Shift.AFTER))
+	private void iris$tweakViewDistanceBasedOnFog(float tickDelta, long limitTime, PoseStack matrix, CallbackInfo ci) {
 		if (!Iris.getCurrentPack().isPresent()) {
 			// Don't mess with the far plane if no shaderpack is loaded
 			return;
@@ -73,8 +74,8 @@ public class MixinTweakFarPlane {
 		//
 		// Coefficient values: 0.83 for fast fog, 0.95 for fancy fog, 1.0 for no fog
 		//
-		// We mimic "fast" fog here
+		// On 1.16, we select the value based on if GL_NV_fog_distance is supported, and on 1.17+ only fancy fog is supported.
 
-		viewDistance *= 0.83F;
+		renderDistance *= GL.getCapabilities().GL_NV_fog_distance ? 0.95 : 0.83F;
 	}
 }

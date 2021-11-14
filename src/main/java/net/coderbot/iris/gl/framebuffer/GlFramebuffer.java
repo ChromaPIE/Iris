@@ -3,14 +3,17 @@ package net.coderbot.iris.gl.framebuffer;
 import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import net.coderbot.iris.Iris;
 import net.coderbot.iris.gl.GlResource;
 import org.lwjgl.opengl.GL30C;
 
+import java.util.Arrays;
+
 public class GlFramebuffer extends GlResource {
-	private Int2IntMap attachments;
+	private final Int2IntMap attachments;
 
 	public GlFramebuffer() {
-		super(GlStateManager.genFramebuffers());
+		super(GlStateManager.glGenFramebuffers());
 
 		this.attachments = new Int2IntArrayMap();
 
@@ -34,7 +37,16 @@ public class GlFramebuffer extends GlResource {
 		int[] glBuffers = new int[buffers.length];
 		int index = 0;
 
+		if (buffers.length > 8) {
+			// TODO: Adjust the limit based on the system
+			throw new IllegalArgumentException("Cannot write to more than 8 draw buffers");
+		}
+
 		for (int buffer : buffers) {
+			if (buffer >= 8) {
+				throw new IllegalArgumentException("Only 8 color attachments are supported, but an attempt was made to write to a color attachment with index " + buffer);
+			}
+
 			glBuffers[index++] = GL30C.GL_COLOR_ATTACHMENT0 + buffer;
 		}
 
@@ -52,24 +64,24 @@ public class GlFramebuffer extends GlResource {
 	}
 
 	public void bind() {
-		GlStateManager.bindFramebuffer(GL30C.GL_FRAMEBUFFER, getGlId());
+		GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, getGlId());
 	}
 
 	public void bindAsReadBuffer() {
-		GlStateManager.bindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, getGlId());
+		GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, getGlId());
 	}
 
 	public void bindAsDrawBuffer() {
-		GlStateManager.bindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, getGlId());
+		GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, getGlId());
 	}
 
 	protected void destroyInternal() {
-		GlStateManager.deleteFramebuffers(getGlId());
+		GlStateManager._glDeleteFramebuffers(getGlId());
 	}
 
 	public boolean isComplete() {
 		bind();
-		int status = GlStateManager.checkFramebufferStatus(GL30C.GL_FRAMEBUFFER);
+		int status = GlStateManager.glCheckFramebufferStatus(GL30C.GL_FRAMEBUFFER);
 
 		return status == GL30C.GL_FRAMEBUFFER_COMPLETE;
 	}

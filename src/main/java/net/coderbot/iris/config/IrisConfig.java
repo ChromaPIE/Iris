@@ -8,20 +8,22 @@ import net.coderbot.iris.gui.UiTheme;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
 import net.coderbot.iris.gui.property.*;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.ChatFormatting;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import net.coderbot.iris.gui.option.IrisVideoSettings;
 
 /**
  * A class dedicated to storing the config values of shaderpacks.
@@ -50,12 +52,17 @@ public class IrisConfig {
 	 */
 	private boolean condenseShaderConfig = true;
 
-	private Path propertiesPath;
+	/**
+	 * The scroll speed for the shaderpack menu
+	 */
+	private int scrollSpeed = 100;
 
-	public IrisConfig() {
+	private final Path propertiesPath;
+
+	public IrisConfig(Path propertiesPath) {
 		shaderPackName = null;
-		enableShaders = false;
-		propertiesPath = FabricLoader.getInstance().getConfigDir().resolve("iris.properties");
+		enableShaders = true;
+		this.propertiesPath = propertiesPath;
 	}
 
 	/**
@@ -76,27 +83,23 @@ public class IrisConfig {
 	 * @return if the shaderpack is internal
 	 */
 	public boolean isInternal() {
-		return areShadersEnabled() && shaderPackName == null;
+		return false;
 	}
 
 	/**
 	 * Returns the name of the current shaderpack
 	 *
-	 * @return Returns the current shaderpack name - if internal shaders are being used it returns "(internal)"
+	 * @return Returns the current shaderpack name
 	 */
-	public String getShaderPackName() {
-		if (shaderPackName == null) {
-			return "(internal)";
-		}
-
-		return shaderPackName;
+	public Optional<String> getShaderPackName() {
+		return Optional.ofNullable(shaderPackName);
 	}
 
 	/**
 	 * Sets the name of the current shaderpack
 	 */
 	public void setShaderPackName(String name) {
-		if (name.equals("(internal)")) {
+		if (name == null || name.equals("(internal)") || name.isEmpty()) {
 			this.shaderPackName = null;
 		} else {
 			this.shaderPackName = name;
@@ -138,6 +141,10 @@ public class IrisConfig {
 		return theme;
 	}
 
+	public int getScrollSpeed() {
+		return this.scrollSpeed;
+	}
+
 	/**
 	 * Determines whether or not shaders are used for rendering.
 	 *
@@ -162,11 +169,20 @@ public class IrisConfig {
 	public void read(Properties properties) {
 		shaderPackName = properties.getProperty("shaderPack", this.shaderPackName);
 		enableShaders = Boolean.parseBoolean(properties.getProperty("enableShaders", String.valueOf(this.enableShaders)));
+		try {
+			IrisVideoSettings.shadowDistance = Integer.parseInt(properties.getProperty("maxShadowRenderDistance", "32"));
+		} catch (NumberFormatException e) {
+			Iris.logger.error("Shadow distance setting reset; value is invalid.");
+			IrisVideoSettings.shadowDistance = 32;
+		}
 		uiTheme = properties.getProperty("uiTheme", this.uiTheme);
 		condenseShaderConfig = Boolean.parseBoolean(properties.getProperty("condenseShaderConfig", String.valueOf(this.condenseShaderConfig)));
+		scrollSpeed = Integer.parseInt(properties.getProperty("scrollSpeed", String.valueOf(this.scrollSpeed)));
 
-		if (shaderPackName != null && shaderPackName.equals("(internal)")) {
-			shaderPackName = null;
+		if (shaderPackName != null) {
+			if (shaderPackName.equals("(internal)") || shaderPackName.isEmpty()) {
+				shaderPackName = null;
+			}
 		}
 	}
 
@@ -178,10 +194,12 @@ public class IrisConfig {
 	public Properties write() {
 		Properties properties = new Properties();
 
-		properties.setProperty("shaderPack", getShaderPackName());
+		properties.setProperty("shaderPack", getShaderPackName().orElse(""));
 		properties.setProperty("enableShaders", Boolean.toString(areShadersEnabled()));
+		properties.setProperty("maxShadowRenderDistance", String.valueOf(IrisVideoSettings.shadowDistance));
 		properties.setProperty("uiTheme", getUITheme().name());
 		properties.setProperty("condenseShaderConfig", Boolean.toString(getIfCondensedShaderConfig()));
+		properties.setProperty("scrollSpeed", Integer.toString(getScrollSpeed()));
 
 		return properties;
 	}
@@ -197,6 +215,7 @@ public class IrisConfig {
 		}
 
 		Properties properties = new Properties();
+		// NB: This uses ISO-8859-1 with unicode escapes as the encoding
 		properties.load(Files.newInputStream(propertiesPath));
 
 		this.read(properties);
@@ -209,6 +228,7 @@ public class IrisConfig {
 	 */
 	public void save() throws IOException {
 		Properties properties = this.write();
+		// NB: This uses ISO-8859-1 with unicode escapes as the encoding
 		properties.store(Files.newOutputStream(propertiesPath), COMMENT);
 	}
 
@@ -217,17 +237,18 @@ public class IrisConfig {
 	 *
 	 * @return pages for the config screen as a String to PropertyList map
 	 */
-	public Map<String, PropertyList> createDocument(TextRenderer tr, Screen parent, PropertyDocumentWidget widget, int width) {
+	public Map<String, PropertyList> createDocument(Font font, Screen parent, PropertyDocumentWidget widget, int width) {
 		Map<String, PropertyList> document = new HashMap<>();
 		PropertyList page = new PropertyList();
-		page.add(new TitleProperty(new TranslatableText("property.iris.title.configScreen").formatted(Formatting.BOLD),
+		page.add(new TitleProperty(new TranslatableComponent("property.iris.title.configScreen").withStyle(ChatFormatting.BOLD),
 				0x82ffffff, 0x82ff0000, 0x82ff8800, 0x82ffd800, 0x8288ff00, 0x8200d8ff, 0x823048ff, 0x829900ff, 0x82ffffff
 		));
-		page.add(new FunctionalButtonProperty(widget, () -> MinecraftClient.getInstance().openScreen(new ShaderPackScreen(parent)), new TranslatableText("options.iris.shaderPackSelection.title"), LinkProperty.Align.CENTER_LEFT));
+		page.add(new FunctionalButtonProperty(widget, () -> Minecraft.getInstance().setScreen(new ShaderPackScreen(parent)), new TranslatableComponent("options.iris.shaderPackSelection.title"), LinkProperty.Align.CENTER_LEFT));
 		int textWidth = (int)(width * 0.6) - 18;
 		page.addAll(ImmutableList.of(
-				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(tr, "property.iris.uiTheme", textWidth, true, true), false, false),
-				new BooleanOptionProperty(widget, true, "condenseShaderConfig", GuiUtil.trimmed(tr, "property.iris.condenseShaderConfig", textWidth, true, true), false)
+				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(font, "property.iris.uiTheme", textWidth, true, true), false, false),
+				new BooleanOptionProperty(widget, true, "condenseShaderConfig", GuiUtil.trimmed(font, "property.iris.condenseShaderConfig", textWidth, true, true), false),
+				new IntOptionProperty(IntStream.rangeClosed(0, 200).boxed().collect(Collectors.toList()), 100, widget, "scrollSpeed", GuiUtil.trimmed(font, "property.iris.scrollSpeed", textWidth, true, true), true)
 		));
 		document.put("main", page);
 		widget.onSave(() -> {

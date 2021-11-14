@@ -1,24 +1,14 @@
 package net.coderbot.iris.rendertarget;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import net.coderbot.iris.Iris;
+import com.google.common.collect.ImmutableSet;
 import net.coderbot.iris.gl.framebuffer.GlFramebuffer;
-import net.coderbot.iris.gl.texture.InternalTextureFormat;
-import net.coderbot.iris.shaderpack.PackDirectives;
-
 import net.coderbot.iris.shaderpack.PackRenderTargetDirectives;
-import net.minecraft.client.gl.Framebuffer;
 
 public class RenderTargets {
-	/**
-	 * The maximum number of render targets supported by Iris.
-	 */
-	public static int MAX_RENDER_TARGETS = 8;
-
 	private final RenderTarget[] targets;
 	private final DepthTexture depthTexture;
 	private final DepthTexture noTranslucents;
@@ -27,18 +17,18 @@ public class RenderTargets {
 
 	private int cachedWidth;
 	private int cachedHeight;
+	private boolean fullClearRequired;
 
-	public RenderTargets(Framebuffer reference, PackRenderTargetDirectives directives) {
-		this(reference.textureWidth, reference.textureHeight, directives.getRenderTargetSettings());
+	public RenderTargets(com.mojang.blaze3d.pipeline.RenderTarget reference, PackRenderTargetDirectives directives) {
+		this(reference.width, reference.height, directives.getRenderTargetSettings());
 	}
 
 	public RenderTargets(int width, int height, Map<Integer, PackRenderTargetDirectives.RenderTargetSettings> renderTargets) {
-		targets = new RenderTarget[MAX_RENDER_TARGETS];
+		targets = new net.coderbot.iris.rendertarget.RenderTarget[renderTargets.size()];
 
 		renderTargets.forEach((index, settings) -> {
-			// TODO: Handle render targets above 8
 			// TODO: Handle mipmapping?
-			targets[index] = RenderTarget.builder().setDimensions(width, height).setInternalFormat(settings.getRequestedFormat()).build();
+			targets[index] = net.coderbot.iris.rendertarget.RenderTarget.builder().setDimensions(width, height).setInternalFormat(settings.getRequestedFormat()).build();
 		});
 
 		this.depthTexture = new DepthTexture(width, height);
@@ -48,6 +38,10 @@ public class RenderTargets {
 		this.cachedHeight = height;
 
 		this.ownedFramebuffers = new ArrayList<>();
+
+		// NB: Make sure all buffers are cleared so that they don't contain undefined
+		// data. Otherwise very weird things can happen.
+		fullClearRequired = true;
 	}
 
 	public void destroy() {
@@ -55,7 +49,7 @@ public class RenderTargets {
 			owned.destroy();
 		}
 
-		for (RenderTarget target : targets) {
+		for (net.coderbot.iris.rendertarget.RenderTarget target : targets) {
 			target.destroy();
 		}
 
@@ -63,7 +57,11 @@ public class RenderTargets {
 		noTranslucents.destroy();
 	}
 
-	public RenderTarget get(int index) {
+	public int getRenderTargetCount() {
+		return targets.length;
+	}
+
+	public net.coderbot.iris.rendertarget.RenderTarget get(int index) {
 		return targets[index];
 	}
 
@@ -81,16 +79,25 @@ public class RenderTargets {
 			return;
 		}
 
-		Iris.logger.info("Resizing render targets to " + newWidth + "x" + newHeight);
 		cachedWidth = newWidth;
 		cachedHeight = newHeight;
 
-		for (RenderTarget target : targets) {
+		for (net.coderbot.iris.rendertarget.RenderTarget target : targets) {
 			target.resize(newWidth, newHeight);
 		}
 
 		depthTexture.resize(newWidth, newHeight);
 		noTranslucents.resize(newWidth, newHeight);
+
+		fullClearRequired = true;
+	}
+
+	public boolean isFullClearRequired() {
+		return fullClearRequired;
+	}
+
+	public void onFullClear() {
+		fullClearRequired = false;
 	}
 
 	public GlFramebuffer createFramebufferWritingToMain(int[] drawBuffers) {
@@ -101,35 +108,82 @@ public class RenderTargets {
 		return createFullFramebuffer(true, drawBuffers);
 	}
 
-	private GlFramebuffer createFullFramebuffer(boolean clearsAlt, int[] drawBuffers) {
-		boolean[] stageWritesToAlt = new boolean[RenderTargets.MAX_RENDER_TARGETS];
+	private ImmutableSet<Integer> invert(ImmutableSet<Integer> base, int[] relevant) {
+		ImmutableSet.Builder<Integer> inverted = ImmutableSet.builder();
 
-		Arrays.fill(stageWritesToAlt, clearsAlt);
+		for (int i : relevant) {
+			if (!base.contains(i)) {
+				inverted.add(i);
+			}
+		}
 
-		GlFramebuffer framebuffer =  createColorFramebuffer(stageWritesToAlt, drawBuffers);
+		return inverted.build();
+	}
+
+	public GlFramebuffer createGbufferFramebuffer(ImmutableSet<Integer> stageWritesToAlt, int[] drawBuffers) {
+		if (drawBuffers.length == 0) {
+			throw new IllegalArgumentException("Framebuffer must have at least one color buffer");
+		}
+
+		ImmutableSet<Integer> stageWritesToMain = invert(stageWritesToAlt, drawBuffers);
+
+		GlFramebuffer framebuffer =  createColorFramebuffer(stageWritesToMain, drawBuffers);
 
 		framebuffer.addDepthAttachment(this.getDepthTexture().getTextureId());
 
 		return framebuffer;
 	}
 
-	public GlFramebuffer createColorFramebuffer(boolean[] stageWritesToAlt, int[] drawBuffers) {
+	private GlFramebuffer createFullFramebuffer(boolean clearsAlt, int[] drawBuffers) {
+		if (drawBuffers.length == 0) {
+			throw new IllegalArgumentException("Framebuffer must have at least one color buffer");
+		}
+
+		ImmutableSet<Integer> stageWritesToMain = ImmutableSet.of();
+
+		if (!clearsAlt) {
+			stageWritesToMain = invert(ImmutableSet.of(), drawBuffers);
+		}
+
+		GlFramebuffer framebuffer =  createColorFramebuffer(stageWritesToMain, drawBuffers);
+
+		framebuffer.addDepthAttachment(this.getDepthTexture().getTextureId());
+
+		return framebuffer;
+	}
+
+	public GlFramebuffer createColorFramebuffer(ImmutableSet<Integer> stageWritesToMain, int[] drawBuffers) {
+		if (drawBuffers.length == 0) {
+			throw new IllegalArgumentException("Framebuffer must have at least one color buffer");
+		}
+
 		GlFramebuffer framebuffer = new GlFramebuffer();
 		ownedFramebuffers.add(framebuffer);
 
-		for (int i = 0; i < RenderTargets.MAX_RENDER_TARGETS; i++) {
-			RenderTarget target = this.get(i);
+		int[] actualDrawBuffers = new int[drawBuffers.length];
 
-			int textureId = stageWritesToAlt[i] ? target.getAltTexture() : target.getMainTexture();
+		for (int i = 0; i < drawBuffers.length; i++) {
+			actualDrawBuffers[i] = i;
+
+			if (drawBuffers[i] >= getRenderTargetCount()) {
+				// TODO: This causes resource leaks, also we should really verify this in the shaderpack parser...
+				throw new IllegalStateException("Render target with index " + drawBuffers[i] + " is not supported, only "
+						+ getRenderTargetCount() + " render targets are supported.");
+			}
+
+			net.coderbot.iris.rendertarget.RenderTarget target = this.get(drawBuffers[i]);
+
+			int textureId = stageWritesToMain.contains(drawBuffers[i]) ? target.getMainTexture() : target.getAltTexture();
 
 			framebuffer.addColorAttachment(i, textureId);
 		}
 
+		framebuffer.drawBuffers(actualDrawBuffers);
+		framebuffer.readBuffer(0);
+
 		if (!framebuffer.isComplete()) {
 			throw new IllegalStateException("Unexpected error while creating framebuffer");
 		}
-
-		framebuffer.drawBuffers(drawBuffers);
 
 		return framebuffer;
 	}
